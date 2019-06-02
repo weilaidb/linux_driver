@@ -1,6 +1,13 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include "include/publicdef.h"
+#include "include/publicbasic.h"
+#include "include/dbgmsg.h"
+#include "dbgmsg.c"
+
+
+extern WORD32 DbgPrintMsg(VOID *pMsg, WORD32 dwLen);
 //必选
 //模块许可声明
 MODULE_LICENSE("GPL");
@@ -25,6 +32,7 @@ static int __init __module_address_init(void)
 	
 	if(ret != NULL)
 	{
+		DbgPrintMsg((VOID *)ret, sizeof(*ret));
 		printk("size struct module      :%d\n", sizeof(*ret));
 		printk("ret->name      :%s\n", ret->name);
 		printk("ret->state     :%d\n", ret->state);

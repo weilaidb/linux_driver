@@ -1,0 +1,1 @@
+cmd_/home/duoduo/work/drivers/linux_driver/module_address/dbgmsg.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/duoduo/work/drivers/linux_driver/module_address/dbgmsg.ko /home/duoduo/work/drivers/linux_driver/module_address/dbgmsg.o /home/duoduo/work/drivers/linux_driver/module_address/dbgmsg.mod.o ;  true
