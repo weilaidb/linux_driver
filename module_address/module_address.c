@@ -1,10 +1,10 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include "include/publicdef.h"
-#include "include/publicbasic.h"
-#include "include/dbgmsg.h"
-#include "dbgmsg.c"
+#include "../common/include/publicdef.h"
+#include "../common/include/publicbasic.h"
+#include "../common/include/dbgmsg.h"
+#include "../common/dbgmsg.c"
 
 
 extern WORD32 DbgPrintMsg(VOID *pMsg, WORD32 dwLen);

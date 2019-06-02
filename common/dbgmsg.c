@@ -11,9 +11,9 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/string.h>  
-#include "../common/include/publicdef.h"
-#include "../common/include/publicbasic.h"
-#include "../common/include/dbgmsg.h"
+#include "include/publicdef.h"
+#include "include/publicbasic.h"
+#include "include/dbgmsg.h"
 
 /*=======================================================
 * 宏定义
