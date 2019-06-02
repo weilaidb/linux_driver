@@ -1,1 +1,6 @@
 *.o
+.*.mk
+.*.cmd
+.*.order
+.tmp_versions
+*.order
