@@ -36,7 +36,6 @@ static int __init __print_symbol_init(void)
 	{
 		printk("fmodule->name:%s\n", fmodule->name);
 		address = (unsigned long)fmodule->core_layout.base;
-		// address = 0;
 		fmt = "it's the second part, \n %s";
 		__print_symbol(fmt, address);
 	}
