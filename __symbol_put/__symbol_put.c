@@ -21,45 +21,22 @@ static int __init __symbol_put_init(void)
 	const char * mod_name;
 	struct module * fmodule;
 	
-	symbol_name = "cpu_debug_store";
-	addr = __symbol_get(symbol_name);
+	symbol_name = "parport";
+	mod_name = "parport";
+	fmodule = find_module(mod_name);
 	
-	if(NULL != addr)
-		printk("the address of %s is :%lx\n", symbol_name, (unsigned long)addr);
+	if(NULL != fmodule)
+	{
+		printk("before calling __symbol_put,\n");
+		printk("ref of %s is :%d\n", mod_name, module_refcount(fmodule));
+		__symbol_put(symbol_name);
+		printk("after calling __symbol_put, \n");
+		printk("ref of %s is:%d\n", mod_name, module_refcount(fmodule));
+	}
 	else
-		printk("%s isn't found\n", symbol_name);
-	
-	symbol_name = "symbol_0";
-	addr = __symbol_get(symbol_name);
-	
-	if(NULL != addr)
-		printk("the address of %s is :%lx\n", symbol_name, (unsigned long)addr);
-	else
-		printk("%s isn't found\n", symbol_name);
-	
- 	symbol_name = "xor";
-	addr = __symbol_get(symbol_name);
-	
-	if(NULL != addr)
-		printk("the address of %s is :%lx\n", symbol_name, (unsigned long)addr);
-	else
-		printk("%s isn't found\n", symbol_name);
-	
- 	symbol_name = "DbgPrintMsg";
-	addr = __symbol_get(symbol_name);
-	
-	if(NULL != addr)
-		printk("the address of %s is :%lx\n", symbol_name, (unsigned long)addr);
-	else
-		printk("%s isn't found\n", symbol_name);
-	
- 	symbol_name = "cpu_info";
-	addr = __symbol_get(symbol_name);
-	
-	if(NULL != addr)
-		printk("the address of %s is :%lx\n", symbol_name, (unsigned long)addr);
-	else
-		printk("%s isn't found\n", symbol_name);
+	{
+		printk("find %s failed!\n", mod_name);
+	}
 	
     return 0;
 }
