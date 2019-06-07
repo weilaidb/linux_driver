@@ -1,5 +1,6 @@
 #include <linux/module.h>
-#include <linux/init.h>
+#include <linux/sched.h>
+#include <linux/pid.h>
 #include <linux/kallsyms.h>
 
 // cat /proc/kallsyms  查看内核的符号表
@@ -7,41 +8,34 @@
 //必选
 //模块许可声明
 MODULE_LICENSE("GPL");
-static int __init try_module_get_init(void);
-static void __exit try_module_get_exit(void);
+static int __init __task_pid_nr_ns_init(void);
+static void __exit __task_pid_nr_ns_exit(void);
 
-static int __init try_module_get_init(void)
+static int __init __task_pid_nr_ns_init(void)
 {
-	int ret;
-	const char *name;
-	struct module *fmodule = NULL;
-	name = "test_module";
-	fmodule = find_module(name);
-	if(NULL != NULL)
-	{
-		printk("before calling try_module_get,\n");
-		printk("refs of %s is: %d\n", name, module_refcount(fmodule));
-		ret = try_module_get(fmodule);
-		printk("after calling try_module_get,\n");
-		printk("ret=%d\n", ret);
-		printk("refs of %s is: %d\n", name, module_refcount(fmodule));
-	}
-	else
-	{
-		printk("find %s failed!\n", name);
-	}
+	printk("into __task_pid_nr_ns_init.\n");
+	
+	struct pid * kpid = find_get_pid(current->pid);
+	
+	struct task_struct * task = pid_task(kpid, PIDTYPE_PID);
+	
+	pid_t result1 = __task_pid_nr_ns(task, PIDTYPE_PID, kpid->numbers[kpid->level].ns);
+	
+	printk("the result of the __task_pid_nr_ns is:%d\n", result1);
+	printk("the pid of current thread is:%d\n", current->pid);
+	printk("out __task_pid_nr_ns\n");
 	
 	printk("module_refcount(THIS_MODULE):%d\n", module_refcount(THIS_MODULE) );
     return 0;
 }
 //模块卸载函数
-static void __exit try_module_get_exit(void)
+static void __exit __task_pid_nr_ns_exit(void)
 {
     printk("<0>module[%s] exit ok!\n", __FUNCTION__);
 }
 //模块注册
-module_init(try_module_get_init);
-module_exit(try_module_get_exit);
+module_init(__task_pid_nr_ns_init);
+module_exit(__task_pid_nr_ns_exit);
 //可选
 MODULE_AUTHOR("wwww");
 MODULE_DESCRIPTION("This is a simple example!\n");
