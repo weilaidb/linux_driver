@@ -21,6 +21,10 @@ static int __init get_pid_init(void)
 	struct pid *mypid1 = get_pid(mypid);
 	printk("the count of mypid1           is:%d\n", mypid1->count);
 	printk("the level of mypid1           is:%d\n", mypid1->level);
+
+	struct pid *mypid2 = get_pid(mypid);
+	printk("the count of mypid2           is:%d\n", mypid2->count);
+	printk("the level of mypid2           is:%d\n", mypid2->level);
 	
 	printk("out get_pid_init\n");
 	
