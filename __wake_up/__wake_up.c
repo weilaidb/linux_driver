@@ -25,7 +25,7 @@ int my_function(void *argc)
 	printk("the current pid is:%d\n", current->pid);
 	
 	printk("the state of the init function is:%d\n", old_thread->state);
-	//__wake_up(&head, TASK_ALL, 0, NULL);
+	__wake_up(&head, TASK_ALL, 0, NULL);
 	
 	printk("out the kernel thread function\n");
 	
