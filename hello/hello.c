@@ -7,7 +7,12 @@ MODULE_LICENSE("GPL");
 //模块加载函数
 static int hello_init(void)
 {
-    printk(KERN_ALERT "hello,I am edsionte\n");
+   	int iLp =  0;
+	for(iLp = 0;iLp < 10;iLp++)
+	{
+		printk(KERN_ALERT "hello,Seq:%u\n", iLp);
+	}
+
     return 0;
 }
 //模块卸载函数
