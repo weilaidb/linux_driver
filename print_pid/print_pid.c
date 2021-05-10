@@ -16,6 +16,7 @@ static int print_pid_init(void)
 	struct list_head *pos;
 	int count = 0;
 	printk("Hello World enter begin:\n");
+	printk("%3s %10s\n", "PID", "NAME");
 	task = &init_task;
 	list_for_each(pos, &task->tasks)
 	{
@@ -24,7 +25,7 @@ static int print_pid_init(void)
 		printk("%d--->%s\n", p->pid, p->comm);
 	}
 	printk("the number of process is:%d\n", count);
-	
+
     return 0;
 }
 //模块卸载函数
