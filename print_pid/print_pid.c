@@ -36,7 +36,7 @@ static int print_pid_init(void)
 	struct list_head *pos;
 	int count = 0;
 	printk("Hello World enter begin:\n");
-	printk("%-6s %-30s %-10s %-10s %-10s\n", "PID", "NAME", "LEVEL", "NR", "VNR");
+	printk("%-6s %-30s %-10s %-10s %-10s %-10s\n", "PID", "NAME", "COUNT", "LEVEL", "NR", "VNR");
 	task = &init_task;
 	list_for_each(pos, &task->tasks)
 	{
@@ -47,8 +47,9 @@ static int print_pid_init(void)
 		struct pid * kpid = find_get_pid(p->pid);
 		int vnr = pid_vnr(kpid);
 
-		printk("%-6d--->%-30s %-10d %-10d %-10d\n"
+		printk("%-6d--->%-30s %-10d %-10d %-10d %-10d\n"
 					, p->pid, p->comm
+					, kpid->count
 					, kpid->level
 					, kpid->numbers[kpid->level].nr
 					, vnr

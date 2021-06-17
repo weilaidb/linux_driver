@@ -8,3 +8,6 @@
 *.ko
 *.mod.c
 exelibtest/
+*.mod
+*.ko
+*.d
