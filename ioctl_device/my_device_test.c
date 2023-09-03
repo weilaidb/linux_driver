@@ -47,7 +47,7 @@ int main()
             perror("IOCTL GET failed");
             close(fd);
             return EXIT_FAILURE;
-        }  
+        }
     }
 
     close(fd);

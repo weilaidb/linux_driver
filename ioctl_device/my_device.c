@@ -22,23 +22,23 @@ static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
     switch (cmd)
     {
-        case IOCTL_SET_VALUE:
-            if (copy_from_user(&tmp, (int *)arg, sizeof(int)))
-                return -EFAULT;
-            value = tmp;
-            break;
+    case IOCTL_SET_VALUE:
+        if (copy_from_user(&tmp, (int *)arg, sizeof(int)))
+            return -EFAULT;
+        value = tmp;
+        break;
 
-        case IOCTL_GET_VALUE:
-            if (copy_to_user((int *)arg, &value, sizeof(int)))
-                return -EFAULT;
-            break;
+    case IOCTL_GET_VALUE:
+        if (copy_to_user((int *)arg, &value, sizeof(int)))
+            return -EFAULT;
+        break;
 
-        case IOCTL_SHOW_VALUE:
-            printk("value is:%u\n", value);
-            break;
+    case IOCTL_SHOW_VALUE:
+        printk("value is:%u\n", value);
+        break;
 
-        default:
-            return -ENOTTY;
+    default:
+        return -ENOTTY;
     }
 
     return ret;
