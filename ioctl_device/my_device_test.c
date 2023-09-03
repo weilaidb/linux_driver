@@ -20,7 +20,7 @@ int main()
     }
 
     // Set value using ioctl
-    value = 42;
+    value = 100;
     if (ioctl(fd, IOCTL_SET_VALUE, &value) < 0)
     {
         perror("IOCTL SET failed");
