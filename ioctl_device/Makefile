@@ -1,5 +1,5 @@
-obj-m += memdev.o
-obj-m += ../common/dbgmsg.o
+obj-m += my_device.o
+# obj-m += ../common/dbgmsg.o
 #generate the path
 CURRENT_PATH:=$(shell pwd)
 #the current kernel version number
