@@ -7,6 +7,7 @@
 #define DEVICE_NAME "my_device"
 #define IOCTL_SET_VALUE _IOR('k', 0, int)
 #define IOCTL_GET_VALUE _IOR('k', 1, int)
+#define IOCTL_SHOW_VALUE _IOR('k', 2, int)
 
 static int value = 0;
 static dev_t dev;
@@ -30,6 +31,10 @@ static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         case IOCTL_GET_VALUE:
             if (copy_to_user((int *)arg, &value, sizeof(int)))
                 return -EFAULT;
+            break;
+
+        case IOCTL_SHOW_VALUE:
+            printk("value is:%u\n", value);
             break;
 
         default:
