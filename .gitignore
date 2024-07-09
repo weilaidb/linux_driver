@@ -11,3 +11,4 @@ exelibtest/
 *.mod
 *.ko
 *.d
+.vscode-ctags
