@@ -32,9 +32,11 @@ extern "C" {
 #endif
 
 /*****************************头文件****************************************/
+#include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/fs.h>
 
 /*****************************宏定义****************************************/
 #define CHARDEVBASE_MAJOR 200
@@ -46,31 +48,46 @@ extern "C" {
 /*****************************全局变量****************************************/
 
 /*****************************本地变量****************************************/
-static int chrdevbase_open (struct inode *, struct file *)
+static char writebuf[100];
+static char readbuf[100];
+static char kerneldata[] = {"kernel data"};
+
+/*****************************函数实现****************************************/
+static int chrdevbase_open (struct inode *inode, struct file *filp)
 {
     printk("chrdevbase_open\n");
     return 0;
 }
 
 
-static int chrdevbase_release (struct inode *, struct file *)
+static int chrdevbase_release (struct inode *inode, struct file *filp)
 {
     printk("chrdevbase_release\n");
     return 0;
 }
-static ssize_t chrdevbase_read (struct file *, char __user *, size_t, loff_t *)
+static ssize_t chrdevbase_read (struct file *filp, char __user *buf, size_t count, loff_t *p2)
 {
-    printk("chrdevbase_read\n");
+    // printk("chrdevbase_read\n");
+    int ret = 0;
+    ret = copy_to_user(buf, kerneldata, sizeof(kerneldata));
+    if( 0 == ret ) {
+        printk("chrdevbase_read success\n");
+    }
     return 0;
 }
 
-static ssize_t chrdevbase_write (struct file *, const char __user *, size_t, loff_t *)
+static ssize_t chrdevbase_write (struct file *filp, const char __user *buf, size_t count, loff_t *p2)
 {
-    printk("chrdevbase_write\n");
+    int ret = 0;
+//    printk("chrdevbase_write\n");
+    ret = copy_from_user(writebuf, buf, count);
+    if( 0 == ret ) {
+        //printk
+    }
     return 0;
 }
 
-const struct file_operations fops_chrdevbase = {
+const struct file_operations chrdevbase_fops = {
     .owner = THIS_MODULE,
     .open = chrdevbase_open,
     .release = chrdevbase_release,
@@ -131,7 +148,7 @@ struct file_operations {
 static int __init chrdevbase_init(void) {
 
     /*注册设备驱动*/
-    int ret = register_chrdev(CHARDEVBASE_MAJOR, CHARDEVBASE_NAME,&fops_chrdevbase );
+    int ret = register_chrdev(CHARDEVBASE_MAJOR, CHARDEVBASE_NAME,&chrdevbase_fops);
     if(ret < 0) {
         printk(KERN_INFO "entering  %s @ %i %d\n", __FUNCTION__, task_pid_nr(current), __LINE__);
         printk("chrdevbase register failed:%d\n", ret);
@@ -144,11 +161,7 @@ static int __init chrdevbase_init(void) {
 
 static void __exit chrdevbase_exit(void) {
     /*注销设备驱动 */
-    int ret = unregister_chrdev(CHARDEVBASE_MAJOR, CHARDEVBASE_NAME);
-    if(ret < 0) {
-        printk(KERN_INFO "entering  %s @ %i %d\n", __FUNCTION__, task_pid_nr(current), __LINE__);
-        printk("chrdevbase unregister failed:%d\n", ret);
-    }
+    unregister_chrdev(CHARDEVBASE_MAJOR, CHARDEVBASE_NAME);
 
     printk(KERN_INFO "ChardevBase driver has been unloaded\n");
 

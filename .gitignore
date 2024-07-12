@@ -12,3 +12,5 @@ exelibtest/
 *.ko
 *.d
 .vscode-ctags
+a.out
+chrdevbase/chrdevbaseApp
