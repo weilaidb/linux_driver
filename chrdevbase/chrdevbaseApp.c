@@ -14,17 +14,27 @@
 /**
  * argc:
  * argv:
- * ./chrdevbaseApp <filename> <1:2> 1表示读，2表示写
+ * ./chrdevbaseApp <filename> <1:2> 1表示读，2表示写 <写的数据>
  * ./chrdevbaseApp <filename> 1 表示从驱动里面读数据
- * ./chrdevbaseApp <filename> 2 表示向驱动里面写数据
+ * ./chrdevbaseApp <filename> 2 writestring 表示向驱动里面写数据
  **/
 int main(int argc, char const *argv[])
 {
     int ret = 0;
     int fd = 0;
     const char *filename;
-    char readbuf[100],writebuf[100];
+    char *pWritebuf = "Hello, world!";
+    char readbuf[100];
+
+    if(argc != 4) {
+        printf("Invalid parameter\r\n");
+        return -1;
+    }
+
+
     filename = argv[1];
+    pWritebuf = argv[3];
+
 
     fd = open(filename, O_RDWR);
     if(fd < 0) {
@@ -43,7 +53,8 @@ int main(int argc, char const *argv[])
     }
     else if(atoi(argv[2]) == 2) /*写*/
     {
-        ret = write(fd, writebuf, sizeof(writebuf));
+        //ret = write(fd, writebuf, sizeof(writebuf));
+        ret = write(fd, pWritebuf, strlen(pWritebuf));
         if(ret < 0) {
             printf("Write file %s failed\r\n", filename);
             return -1;

@@ -51,6 +51,7 @@ extern "C" {
 static char writebuf[100];
 static char readbuf[100];
 static char kerneldata[] = {"kernel data"};
+static char samebuf[100];
 
 /*****************************函数实现****************************************/
 static int chrdevbase_open (struct inode *inode, struct file *filp)
@@ -69,7 +70,7 @@ static ssize_t chrdevbase_read (struct file *filp, char __user *buf, size_t coun
 {
     // printk("chrdevbase_read\n");
     int ret = 0;
-    ret = copy_to_user(buf, kerneldata, sizeof(kerneldata));
+    ret = copy_to_user(buf, samebuf, sizeof(samebuf));
     if( 0 == ret ) {
         printk("chrdevbase_read success\n");
     }
@@ -80,9 +81,9 @@ static ssize_t chrdevbase_write (struct file *filp, const char __user *buf, size
 {
     int ret = 0;
 //    printk("chrdevbase_write\n");
-    ret = copy_from_user(writebuf, buf, count);
+    ret = copy_from_user(samebuf, buf, count);
     if( 0 == ret ) {
-        //printk
+        printk("chrdevbase_write success, count:%u\n", count);
     }
     return 0;
 }
