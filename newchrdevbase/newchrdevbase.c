@@ -178,31 +178,43 @@ static int __init newchardevbase_init(void) {
     }
     if(ret < 0) {
         printk("newchardevbase alloc_chrdev_region failed:%d\n", ret);
-        return -1;
+        goto fail_devid;
     }
-
     printk("newchardevbase major:%d, minor:%d\n", newchrled.major, newchrled.minor);
 
     /*3.注册字符设备*/
     newchrled.cdev.owner = THIS_MODULE;
     cdev_init(&newchrled.cdev, &newchrled_fops);
     ret = cdev_add(&newchrled.cdev, newchrled.devid, NEWCHRLED_COUNT);
+    if(ret < 0) {
+        printk("cdev_add failed\n");
+        goto fail_cdev;
+    }
 
     /*自动创建设备节点*/
     newchrled.class = class_create(THIS_MODULE, NEWCHARDEVBASE_NAME);
     if(IS_ERR(newchrled.class))
     {
-        return PTR_ERR(newchrled.class);
+        goto fail_class;
     }
     newchrled.device = device_create(newchrled.class, NULL, newchrled.devid, NULL, NEWCHARDEVBASE_NAME);
     if(IS_ERR(newchrled.device))
     {
-        return PTR_ERR(newchrled.device);
+        goto fail_device;
     }
 
     printk(KERN_INFO "NewChardevBase driver has been loaded\n");
 
     return 0;
+
+fail_device:
+    class_destroy(newchrled.class);
+fail_class:
+    cdev_del(&newchrled.cdev);
+fail_cdev:
+    unregister_chrdev_region(newchrled.devid, NEWCHRLED_COUNT);
+fail_devid:
+    return ret;
 }
 
 static void __exit newchardevbase_exit(void) {
