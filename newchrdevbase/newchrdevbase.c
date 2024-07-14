@@ -88,7 +88,7 @@ static ssize_t newchardevbase_write (struct file *filp, const char __user *buf, 
 //    printk("newchardevbase_write\n");
     ret = copy_from_user(samebuf, buf, count);
     if( 0 == ret ) {
-        printk("newchardevbase_write success, count:%u\n", count);
+        printk("newchardevbase_write success, count:%ld\n", count);
     }
     return 0;
 }
@@ -191,15 +191,17 @@ static int __init newchardevbase_init(void) {
         goto fail_cdev;
     }
 
-    /*自动创建设备节点*/
+    /*4、自动创建设备节点*/
     newchrled.class = class_create(THIS_MODULE, NEWCHARDEVBASE_NAME);
     if(IS_ERR(newchrled.class))
     {
+        ret = PTR_ERR(newchrled.class);
         goto fail_class;
     }
     newchrled.device = device_create(newchrled.class, NULL, newchrled.devid, NULL, NEWCHARDEVBASE_NAME);
     if(IS_ERR(newchrled.device))
     {
+        ret = PTR_ERR(newchrled.device);
         goto fail_device;
     }
 
