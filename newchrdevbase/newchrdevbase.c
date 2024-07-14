@@ -182,17 +182,11 @@ static int __init newchardevbase_init(void) {
     }
 
     printk("newchardevbase major:%d, minor:%d\n", newchrled.major, newchrled.minor);
+
     /*3.注册字符设备*/
     newchrled.cdev.owner = THIS_MODULE;
     cdev_init(&newchrled.cdev, &newchrled_fops);
     ret = cdev_add(&newchrled.cdev, newchrled.devid, NEWCHRLED_COUNT);
-
-    /*注册设备驱动*/
-    ret = register_chrdev(NEWCHARDEVBASE_MAJOR, NEWCHARDEVBASE_NAME,&newchrled_fops);
-    if(ret < 0) {
-        printk(KERN_INFO "entering  %s @ %i %d\n", __FUNCTION__, task_pid_nr(current), __LINE__);
-        printk("newchardevbase register failed:%d\n", ret);
-    }
 
     /*自动创建设备节点*/
     newchrled.class = class_create(THIS_MODULE, NEWCHARDEVBASE_NAME);
