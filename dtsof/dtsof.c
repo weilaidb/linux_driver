@@ -2,6 +2,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/of.h>
+#include <linux/slab.h>
 
 
 //必选
@@ -16,6 +17,10 @@ static int __init dtsof_init(void)
 
     struct device_node *bl_nd = NULL;
     struct property *comppro = NULL;
+    const char *str = NULL;
+    u32 def_value = 0;
+    u32 elemsize = 0;
+    u32 *brival = NULL;
     /* 1.找到backlight节点，路径是/backlight */
     bl_nd = of_find_node_by_path("/backlight");
     if(bl_nd == NULL) {
@@ -33,11 +38,64 @@ static int __init dtsof_init(void)
     }
     printk(KERN_ALERT "dtsof: find compatible property!\n");
     printk(KERN_ALERT "dtsof: %s\n", (char *)comppro->value);
+    ret = of_property_read_string(bl_nd, "status", &str);
+    if(ret != 0) {
+        printk(KERN_ALERT "dtsof: can't find status property!\n");
+        goto fail_rs;
+    }
+    else {
+        printk(KERN_ALERT "status: %s\n", str);
+    }
+    /*3、读取数字属性值*/
+    ret = of_property_read_u32(bl_nd, "default-brightness_level", &def_value);
+    if(ret != 0) {
+        goto fail_read32;
+    }
+    else {
+        printk(KERN_ALERT "default-brightness_level: %u\n", def_value);
+    }
+
+    /*4、获取数组类型的属性*/
+    elemsize = of_property_count_elems_of_size(bl_nd, "brightness-levels", sizeof(u32));
+    if(elemsize < 0) {
+        ret = -EINVAL;
+        goto fail_readele;
+    }
+    else {
+        printk(KERN_ALERT "dtsof: brightness-levels size: %d\n", elemsize);
+    }
+    /* 申请内存*/
+    brival = kmalloc(elemsize * sizeof(u32), GFP_KERNEL);
+    if(brival == NULL) {
+        printk(KERN_ALERT "dtsof: kmalloc failed!\n");
+        ret = -ENOMEM;
+        goto fail_mem;
+    }
+
+    /* 5、读取数组类型的属性 */
+    ret = of_property_read_u32_array(bl_nd, "brightness-levels", brival, elemsize);
+    if(ret != 0) {
+        goto fail_read32array;
+    }
+    else {
+        int i = 0;
+        for(i = 0; i < elemsize; i++) {
+            printk(KERN_ALERT "dtsof: brightness-levels[%d]: %u\n", i, brival[i]);
+        }
+    }
+
+fail_read32array:
+    kfree(brival);
 
     return 0;
 
+
+fail_readele:
+fail_mem:
 fail_property:
 fail_findnd:
+fail_rs:
+fail_read32:
 
     return ret;
 }
