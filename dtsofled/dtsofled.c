@@ -1,107 +1,104 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/uaccess.h>
 #include <linux/of.h>
 #include <linux/slab.h>
+#include <linux/io.h>
+//#include <linux/io_address.h>
+// #include <linux/io_irq.h>
+#include <linux/cdev.h>
+#include <linux/fs.h>
 
 
-//必选
-//模块许可声明
-MODULE_LICENSE("GPL");
+#define DTSLED_CNT 1
+#define DTSLED_NAME "dtsled"
+
 static int __init dtsofled_init(void);
 static void __exit dtsofled_exit(void);
+
+struct dtsled_dev {
+    dev_t devid; /*设备号*/
+    struct cdev cdev;/*字符设备*/
+    struct device *device; /*设备结构体*/
+    struct class *class; /*类指针*/
+    int major; /*主设备号*/
+    int minor; /*次设备号*/
+}; /*定义dtsled设备结构体*/
+
+struct dtsled_dev dtsled; /*led设备*/
+
+//static int dtsled_open(struct file *filp)
+//{
+//
+//}
+//
+
+/*dtsled 字符设备操作集*/
+static const struct file_operations dtsled_fops = {
+    .owner = THIS_MODULE,
+    // .open = dtsled_open,
+
+};
 
 static int __init dtsofled_init(void)
 {
     int ret = 0;
 
-    struct device_node *bl_nd = NULL;
-    struct property *comppro = NULL;
-    const char *str = NULL;
-    u32 def_value = 0;
-    u32 elemsize = 0;
-    u32 *brival = NULL;
-    /* 1.找到backlight节点，路径是/backlight */
-    bl_nd = of_find_node_by_path("/backlight");
-    if(bl_nd == NULL) {
-        printk(KERN_ALERT "dtsofled: can't find backlight node!\n");
-        ret = -EINVAL;
-        goto fail_findnd;
+    /*注册字符设备*/
+    dtsled.major = 0; /* 设备号*/
+    if(dtsled.major) {
+        dtsled.devid = MKDEV(dtsled.major, 0);
+        ret = register_chrdev_region(dtsled.devid, DTSLED_CNT, DTSLED_NAME);
+    } else {
+        ret = alloc_chrdev_region(&dtsled.devid, 0,DTSLED_CNT, DTSLED_NAME);
+        dtsled.major = MAJOR(dtsled.devid);
+        dtsled.minor = MINOR(dtsled.devid);
     }
-    printk(KERN_ALERT "dtsofled: find backlight node!\n");
-    /*2. 获取属性 */
-    comppro = of_find_property(bl_nd, "compatible", NULL);
-    if(comppro == NULL) {
-        printk(KERN_ALERT "dtsofled: can't find compatible property!\n");
-        ret = -EINVAL;
-        goto fail_property;
-    }
-    printk(KERN_ALERT "dtsofled: find compatible property!\n");
-    printk(KERN_ALERT "dtsofled: %s\n", (char *)comppro->value);
-    ret = of_property_read_string(bl_nd, "status", &str);
-    if(ret != 0) {
-        printk(KERN_ALERT "dtsofled: can't find status property!\n");
-        goto fail_rs;
-    }
-    else {
-        printk(KERN_ALERT "status: %s\n", str);
-    }
-    /*3、读取数字属性值*/
-    ret = of_property_read_u32(bl_nd, "default-brightness_level", &def_value);
-    if(ret != 0) {
-        goto fail_read32;
-    }
-    else {
-        printk(KERN_ALERT "default-brightness_level: %u\n", def_value);
+    if(ret < 0) {
+        goto fail_devid;
     }
 
-    /*4、获取数组类型的属性*/
-    elemsize = of_property_count_elems_of_size(bl_nd, "brightness-levels", sizeof(u32));
-    if(elemsize < 0) {
-        ret = -EINVAL;
-        goto fail_readele;
+    /*2.添加字符设备*/
+    dtsled.cdev.owner = THIS_MODULE;
+    cdev_init(&dtsled.cdev, &dtsled_fops);
+    ret = cdev_add(&dtsled.cdev, dtsled.devid, DTSLED_CNT);
+    if(ret < 0) {
+        goto fail_cdev;
     }
-    else {
-        printk(KERN_ALERT "dtsofled: brightness-levels size: %d\n", elemsize);
-    }
-    /* 申请内存*/
-    brival = kmalloc(elemsize * sizeof(u32), GFP_KERNEL);
-    if(brival == NULL) {
-        printk(KERN_ALERT "dtsofled: kmalloc failed!\n");
-        ret = -ENOMEM;
-        goto fail_mem;
+    /*3、自动创建设备节点*/
+    dtsled.class = class_create(THIS_MODULE, DTSLED_NAME);
+    if(IS_ERR(dtsled.class)) {
+        ret = PTR_ERR(dtsled.class);
+        goto fail_class;
     }
 
-    /* 5、读取数组类型的属性 */
-    ret = of_property_read_u32_array(bl_nd, "brightness-levels", brival, elemsize);
-    if(ret != 0) {
-        goto fail_read32array;
-    }
-    else {
-        int i = 0;
-        for(i = 0; i < elemsize; i++) {
-            printk(KERN_ALERT "dtsofled: brightness-levels[%d]: %u\n", i, brival[i]);
-        }
+    dtsled.device = device_create(dtsled.class, NULL, dtsled.devid, NULL, DTSLED_NAME);
+    if(IS_ERR(dtsled.device)) {
+        ret = PTR_ERR(dtsled.device);
+        goto fail_device;
     }
 
-fail_read32array:
-    kfree(brival);
 
     return 0;
 
-
-fail_readele:
-fail_mem:
-fail_property:
-fail_findnd:
-fail_rs:
-fail_read32:
-
+fail_device:
+    device_destroy(dtsled.class, dtsled.devid);
+fail_class:
+    cdev_del(&dtsled.cdev);
+fail_cdev:
+    unregister_chrdev_region(dtsled.devid, DTSLED_CNT);
+fail_devid:
     return ret;
 }
 //模块卸载函数
 static void __exit dtsofled_exit(void)
 {
+    /* 删除字符设备*/
+    cdev_del(&dtsled.cdev);
+    unregister_chrdev_region(dtsled.devid, DTSLED_CNT);
+    device_destroy(dtsled.class, dtsled.devid);
+    class_destroy(dtsled.class);
     printk(KERN_ALERT "dtsofled exit ok!\n");
 }
 
@@ -111,6 +108,9 @@ static void __exit dtsofled_exit(void)
 //模块注册
 module_init(dtsofled_init);
 module_exit(dtsofled_exit);
+//必选
+//模块许可声明
+MODULE_LICENSE("GPL");
 //可选
 MODULE_AUTHOR("dtsofled");
 MODULE_DESCRIPTION("dtsofled simple example!\n");
