@@ -24,26 +24,52 @@ struct dtsled_dev {
     struct class *class; /*类指针*/
     int major; /*主设备号*/
     int minor; /*次设备号*/
+    struct device_node *nd; /*dts节点*/
 }; /*定义dtsled设备结构体*/
 
 struct dtsled_dev dtsled; /*led设备*/
 
-//static int dtsled_open(struct file *filp)
-//{
-//
-//}
-//
+static int dtsled_open(struct inode *inode, struct file *filp)
+{
+    filp->private_data = &dtsled;
+    return 0;
+}
+
+static int dtsled_release(struct inode *inode, struct file *filp)
+{
+    struct dtsled_dev *dev = (struct dtsled_dev *)filp->private_data;
+    return 0;
+}
+
+static ssize_t dtsled_read(struct file *filp, char __user *buf, size_t cnt, loff_t *offt)
+{
+    struct dtsled_dev *dev = (struct dtsled_dev *)filp->private_data;
+    return 0;
+}
+
+static ssize_t dtsled_write(struct file *filp, const char __user *buf, size_t cnt, loff_t *offt)
+{
+    struct dtsled_dev *dev = (struct dtsled_dev *)filp->private_data;
+    return 0;
+}
+
 
 /*dtsled 字符设备操作集*/
 static const struct file_operations dtsled_fops = {
     .owner = THIS_MODULE,
-    // .open = dtsled_open,
+    .open = dtsled_open,
+    .release = dtsled_release,
+    .write = dtsled_write,
+    .read = dtsled_read,
 
 };
 
 static int __init dtsofled_init(void)
 {
     int ret = 0;
+    const char *str;
+    u32 regdata[10];
+    int i;
 
     /*注册字符设备*/
     dtsled.major = 0; /* 设备号*/
@@ -79,11 +105,45 @@ static int __init dtsofled_init(void)
         goto fail_device;
     }
 
+/*获取设备树属性内容*/
+    dtsled.nd = of_find_node_by_path("/alphaled");
+    if(!dtsled.nd) {
+        printk(KERN_ALERT "dts node not found!\n");
+        goto fail_findnd;
+    }
+    ret = of_property_read_string(dtsled.nd, "status", &str);
+    if(ret < 0) {
+        printk(KERN_ALERT "dts node not found!\n");
+        goto fail_rs;
+    }
+    printk(KERN_ALERT "status: %s\n", str);
+
+    ret = of_property_read_string(dtsled.nd, "compatible", &str);
+    if(ret < 0) {
+        printk(KERN_ALERT "dts node not found!\n");
+        goto fail_rs;
+    }
+    printk(KERN_ALERT "compatible: %s\n", str);
+
+    ret = of_property_read_u32_array(dtsled.nd, "reg", regdata, sizeof(regdata));
+    if(ret < 0) {
+        printk(KERN_ALERT "dts node not found!\n");
+        goto fail_rs;
+    }
+    printk("reg data\n");
+    for(i = 0; i < 10; i++) {
+        printk(KERN_ALERT "reg[%d]: %x\n", i, regdata[i]);
+    }
+    
 
     return 0;
 
-fail_device:
+
+fail_rs:
+fail_findnd:
     device_destroy(dtsled.class, dtsled.devid);
+fail_device:
+    class_destroy(dtsled.class);
 fail_class:
     cdev_del(&dtsled.cdev);
 fail_cdev:
