@@ -14,6 +14,21 @@
 #define DTSLED_CNT 1
 #define DTSLED_NAME "dtsled"
 
+
+#define LEDOFF 0
+#define LEDON 1
+
+
+/*地址映射后的虚拟指针地址*/
+static void __iomem *IMX6U_CCM_CCGR1;
+static void __iomem *SW_MUX_GPIO1_I003;
+static void __iomem *SW_PAD_GPIO1_I003;
+static void __iomem *GPIO1_DR;
+static void __iomem *GPIO1_GDIR;
+
+
+
+
 static int __init dtsofled_init(void);
 static void __exit dtsofled_exit(void);
 
@@ -28,6 +43,22 @@ struct dtsled_dev {
 }; /*定义dtsled设备结构体*/
 
 struct dtsled_dev dtsled; /*led设备*/
+
+/* LED灯打开/关闭 */
+static void led_switch(u8 sta)
+{
+    u32 val = 0;
+
+    if(sta == LEDON) {
+        val = readl(GPIO1_DR);
+        val &= ~(1 << 3); /* bit3清零，打开LED灯*/
+        writel(val, GPIO1_DR);
+    }else if(sta == LEDOFF) {
+        val = readl(GPIO1_DR);
+        val |= (1 << 3); /*bit3置1，关闭LED灯*/
+        writel(val, GPIO1_DR);
+    }
+}
 
 static int dtsled_open(struct inode *inode, struct file *filp)
 {
@@ -50,6 +81,15 @@ static ssize_t dtsled_read(struct file *filp, char __user *buf, size_t cnt, loff
 static ssize_t dtsled_write(struct file *filp, const char __user *buf, size_t cnt, loff_t *offt)
 {
     struct dtsled_dev *dev = (struct dtsled_dev *)filp->private_data;
+    int retvalue;
+    unsigned char databuf[1];
+    retvalue = copy_from_user(databuf, buf, cnt);
+    if(retvalue < 0) {
+        return -EFAULT;
+    }
+
+    led_switch(buf[0]);
+
     return 0;
 }
 
@@ -135,6 +175,12 @@ static int __init dtsofled_init(void)
         printk(KERN_ALERT "reg[%d]: %x\n", i, regdata[i]);
     }
     
+    /*LED初始化 */
+    IMX6U_CCM_CCGR1=ioremap(regdata[0], regdata[1]);
+    SW_MUX_GPIO1_I003 = ioremap(regdata[2], regdata[3]);
+    SW_PAD_GPIO1_I003 = ioremap(regdata[4], regdata[5]);
+    GPIO1_DR=ioremap(regdata[6], regdata[7]);
+    GPIO1_GDIR=ioremap(regdata[8],regdata[9]);
 
     return 0;
 
@@ -154,6 +200,21 @@ fail_devid:
 //模块卸载函数
 static void __exit dtsofled_exit(void)
 {
+    u32 val = 0;
+    val = readl(GPIO1_DR);
+    val |= (1 << 3); /* bit3置1，关闭LED*/
+    writel(val, GPIO1_DR);
+
+
+
+
+    /*取消地址映射*/
+    iounmap(IMX6U_CCM_CCGR1);
+    iounmap(SW_MUX_GPIO1_I003 );
+    iounmap(SW_PAD_GPIO1_I003 );
+    iounmap(GPIO1_DR);
+    iounmap(GPIO1_GDIR);
+
     /* 删除字符设备*/
     cdev_del(&dtsled.cdev);
     unregister_chrdev_region(dtsled.devid, DTSLED_CNT);
