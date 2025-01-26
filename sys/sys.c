@@ -4,6 +4,10 @@
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
 #include <linux/slab.h>
+#include <linux/sched/signal.h>
+
+
+
 
 // 创建一个 kobject 来表示 /sys/kernel/mymodule
 static struct kobject *mymodule_kobj;
@@ -17,11 +21,26 @@ static ssize_t my_data_show(struct kobject *kobj, struct kobj_attribute *attr, c
     return sprintf(buf, "%s\n", my_data);
 }
 
+void my_function(void)
+{
+    struct task_struct *task;
+
+    for_each_process(task)
+    {
+        printk(KERN_INFO "Process: %s (PID: %d)\n", task->comm, task->pid);
+    }
+}
 // sysfs 属性的存储函数
 static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
     snprintf(my_data, sizeof(my_data), "%s", buf);
     printk(KERN_INFO "Received data: %s\n", my_data);
+    //如果数据为"showtask"，不包含\n, 则打印当前进程信息
+    if(strncmp(my_data, "showtask", 8) == 0)
+    {
+        my_function();
+    }
+
     return count;
 }
 
