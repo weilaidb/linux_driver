@@ -30,6 +30,28 @@ void my_function(void)
         printk(KERN_INFO "Process: %s (PID: %d)\n", task->comm, task->pid);
     }
 }
+
+void print_task_info(void)
+{
+    struct task_struct *task;
+
+    for_each_process(task) // 遍历所有进程[^3^]
+    {
+        // 获取进程的 PID 和 TGID
+        pid_t pid = task->pid; // 进程 ID[^3^]
+        pid_t tgid = task->tgid; // 线程组 ID[^3^]
+
+        // 获取进程的优先级
+        int prio = task->prio; // 当前优先级[^3^]
+        int static_prio = task->static_prio; // 静态优先级[^3^]
+        int normal_prio = task->normal_prio; // 普通优先级[^3^]
+
+        // 打印进程信息
+        printk(KERN_INFO "Process: %s (PID: %d, TGID: %d, Prio: %d, Static Prio: %d, Normal Prio: %d)\n",
+               task->comm, pid, tgid, prio, static_prio, normal_prio);
+    }
+}
+
 // sysfs 属性的存储函数
 static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
@@ -39,6 +61,11 @@ static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, 
     if(strncmp(my_data, "showtask", 8) == 0)
     {
         my_function();
+    }
+    //如果数据为"showalltask"，不包含\n, 则打印所有进程信息
+    else if(strncmp(my_data, "showalltask", 11) == 0)
+    {
+        print_task_info();
     }
 
     return count;
