@@ -46,8 +46,21 @@ static const struct proc_ops my_proc_ops = {
 // 模块初始化函数
 static int __init my_module_init(void)
 {
+    struct proc_dir_entry *entry;
+
     // 创建 /proc/sys/my_module 节点
-    proc_create("sys/my_module", 0666, NULL, &my_proc_ops);
+    entry = proc_create("sys/my_module", 0666, NULL, &my_proc_ops);
+    if (!entry) {
+        printk(KERN_ERR "Failed to create /proc/sys/my_module\n");
+        // 打印可能的原因
+        printk(KERN_ERR "Possible reasons:\n");
+        printk(KERN_ERR "1. Insufficient memory\n");
+        printk(KERN_ERR "2. Invalid parameters\n");
+        printk(KERN_ERR "3. Permission issues\n");
+        printk(KERN_ERR "4. Kernel configuration issues\n");
+        return -ENOMEM;
+    }
+
     printk(KERN_INFO "My module loaded.\n");
     return 0;
 }
