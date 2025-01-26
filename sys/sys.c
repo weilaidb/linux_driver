@@ -21,19 +21,22 @@ static ssize_t my_data_show(struct kobject *kobj, struct kobj_attribute *attr, c
     return sprintf(buf, "%s\n", my_data);
 }
 
-void my_function(void)
+void showtasklist(void)
 {
     struct task_struct *task;
-
+    int iTaskCount = 0;
+    
     for_each_process(task)
     {
         printk(KERN_INFO "Process: %s (PID: %d)\n", task->comm, task->pid);
     }
+    printk(KERN_INFO "task count:%d\n", iTaskCount);
 }
 
 void print_task_info(void)
 {
     struct task_struct *task;
+    int iTaskCount = 0;
 
     for_each_process(task) // 遍历所有进程[^3^]
     {
@@ -49,7 +52,9 @@ void print_task_info(void)
         // 打印进程信息
         printk(KERN_INFO "Process: %s (PID: %d, TGID: %d, Prio: %d, Static Prio: %d, Normal Prio: %d)\n",
                task->comm, pid, tgid, prio, static_prio, normal_prio);
+        iTaskCount++;
     }
+    printk(KERN_INFO "task count:%d\n", iTaskCount);
 }
 
 // sysfs 属性的存储函数
@@ -60,7 +65,7 @@ static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, 
     //如果数据为"showtask"，不包含\n, 则打印当前进程信息
     if(strncmp(my_data, "showtask", 8) == 0)
     {
-        my_function();
+        showtasklist();
     }
     //如果数据为"showalltask"，不包含\n, 则打印所有进程信息
     else if(strncmp(my_data, "showalltask", 11) == 0)
