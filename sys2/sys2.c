@@ -7,6 +7,11 @@
 #include <linux/sched/signal.h>
 #include <linux/ctype.h>
 #include <linux/uaccess.h>
+#include <linux/pid.h>
+#include <linux/fs.h>
+#include <linux/namei.h>
+#include <linux/sched.h>
+#include <linux/cred.h>
 
 // 创建一个 kobject 来表示 /sys/kernel/mymodule
 static struct kobject *mymodule_kobj;
@@ -20,7 +25,7 @@ static ssize_t my_data_show(struct kobject *kobj, struct kobj_attribute *attr, c
     return sprintf(buf, "%s\n", my_data);
 }
 
-void showtasklist(void)
+void showtasklist(const char *param)
 {
     struct task_struct *task;
     int iTaskCount = 0;
@@ -33,7 +38,7 @@ void showtasklist(void)
     printk(KERN_INFO "task count:%d\n", iTaskCount);
 }
 
-void print_task_info(void)
+void print_task_info(const char *param)
 {
     struct task_struct *task;
     int iTaskCount = 0;
@@ -78,55 +83,81 @@ static void parse_command(const char *cmd)
 }
 
 // 设置所有进程的优先级
-static void set_all_task_nice(int nice_value)
+static void set_all_task_nice(const char *param)
 {
-    struct task_struct *task;
-
-    for_each_process(task)
-    {
-        if (task->pid != 0) // 跳过 init 进程
-        {
-            set_user_nice(task, nice_value);
-            printk(KERN_INFO "Set nice value of process %s (PID: %d) to %d\n", task->comm, task->pid, nice_value);
+    int nice_value;
+    if (sscanf(param, "%d", &nice_value) == 1) {
+        struct task_struct *task;
+        for_each_process(task) {
+            if (task->pid != 0) { // 跳过 init 进程
+                set_user_nice(task, nice_value);
+                printk(KERN_INFO "Set nice value of process %s (PID: %d) to %d\n", task->comm, task->pid, nice_value);
+            }
         }
+    } else {
+        printk(KERN_ERR "Invalid nice value\n");
     }
 }
+
+// 设置指定用户的进程的优先级
+static void set_user_nice_by_uid(const char *param)
+{
+    int uid, nice_value;
+    if (sscanf(param, "%d %d", &uid, &nice_value) == 2) {
+        struct task_struct *task;
+        kuid_t kuid = make_kuid(current_user_ns(), uid);
+
+        if (!uid_valid(kuid)) {
+            printk(KERN_ERR "Invalid UID: %d\n", uid);
+            return;
+        }
+
+        for_each_process(task) {
+            if (task->pid != 0 && uid_eq(task_uid(task), kuid)) { // 跳过 init 进程
+                set_user_nice(task, nice_value);
+                printk(KERN_INFO "Set nice value of process %s (PID: %d, UID: %d) to %d\n", task->comm, task->pid, uid, nice_value);
+            }
+        }
+    } else {
+        printk(KERN_ERR "Invalid input format. Expected: setniceuser <uid> <nice_value>\n");
+    }
+}
+
+// 定义命令处理函数的结构体
+struct command_handler {
+    const char *cmd;
+    void (*handler)(const char *param);
+};
+
+// 定义命令处理函数数组
+static struct command_handler command_handlers[] = {
+    {"showtask", showtasklist},
+    {"showalltask", print_task_info},
+    {"parse", parse_command},
+    {"setnice", set_all_task_nice},
+    {"setniceuser", set_user_nice_by_uid},
+    {NULL, NULL} // 结束标志
+};
 
 // sysfs 属性的存储函数
 static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
+    int i;
+    const char *param;
+
     snprintf(my_data, sizeof(my_data), "%s", buf);
     printk(KERN_INFO "Received data: %s\n", my_data);
 
-    // 如果数据为 "showtask"，不包含换行符，则打印当前进程信息
-    if (strncmp(my_data, "showtask", 8) == 0)
-    {
-        showtasklist();
-    }
-    // 如果数据为 "showalltask"，不包含换行符，则打印所有进程信息
-    else if (strncmp(my_data, "showalltask", 11) == 0)
-    {
-        print_task_info();
-    }
-    // 如果数据为 "parse"，则解析命令和参数
-    else if (strncmp(my_data, "parse", 5) == 0)
-    {
-        parse_command(my_data + 6); // 跳过 "parse" 命令本身
-    }
-    // 如果数据为 "setnice"，则设置所有进程的优先级
-    else if (strncmp(my_data, "setnice", 7) == 0)
-    {
-        int nice_value;
-        if (sscanf(my_data + 8, "%d", &nice_value) == 1)
-        {
-            set_all_task_nice(nice_value);
-        }
-        else
-        {
-            printk(KERN_ERR "Invalid nice value\n");
+    // 遍历命令处理函数数组
+    for (i = 0; command_handlers[i].cmd; i++) {
+        if (strncmp(my_data, command_handlers[i].cmd, strlen(command_handlers[i].cmd)) == 0) {
+            param = my_data + strlen(command_handlers[i].cmd) + 1;
+            command_handlers[i].handler(param);
+            return count;
         }
     }
 
+    printk(KERN_ERR "Unknown command: %s\n", my_data);
     return count;
 }
 
