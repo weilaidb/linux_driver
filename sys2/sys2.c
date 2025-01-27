@@ -6,6 +6,7 @@
 #include <linux/slab.h>
 #include <linux/sched/signal.h>
 #include <linux/ctype.h>
+#include <linux/uaccess.h>
 
 // 创建一个 kobject 来表示 /sys/kernel/mymodule
 static struct kobject *mymodule_kobj;
@@ -76,6 +77,21 @@ static void parse_command(const char *cmd)
     kfree(cmd_copy);
 }
 
+// 设置所有进程的优先级
+static void set_all_task_nice(int nice_value)
+{
+    struct task_struct *task;
+
+    for_each_process(task)
+    {
+        if (task->pid != 0) // 跳过 init 进程
+        {
+            set_user_nice(task, nice_value);
+            printk(KERN_INFO "Set nice value of process %s (PID: %d) to %d\n", task->comm, task->pid, nice_value);
+        }
+    }
+}
+
 // sysfs 属性的存储函数
 static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
@@ -96,6 +112,19 @@ static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, 
     else if (strncmp(my_data, "parse", 5) == 0)
     {
         parse_command(my_data + 6); // 跳过 "parse" 命令本身
+    }
+    // 如果数据为 "setnice"，则设置所有进程的优先级
+    else if (strncmp(my_data, "setnice", 7) == 0)
+    {
+        int nice_value;
+        if (sscanf(my_data + 8, "%d", &nice_value) == 1)
+        {
+            set_all_task_nice(nice_value);
+        }
+        else
+        {
+            printk(KERN_ERR "Invalid nice value\n");
+        }
     }
 
     return count;
