@@ -62,6 +62,7 @@ static int __init my_driver_init(void)
 
     class = class_create(THIS_MODULE, DEVICE_NAME);
     device = device_create(class, NULL, dev, NULL, DEVICE_NAME);
+    printk("my_device init\n");
 
     return 0;
 }

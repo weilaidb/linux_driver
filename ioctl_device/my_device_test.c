@@ -8,10 +8,16 @@
 #define IOCTL_GET_VALUE _IOR('k', 1, int)
 #define IOCTL_SHOW_VALUE _IOR('k', 2, int)
 
-int main()
+int main(int argc, char *argv[])
 {
     int fd;
     int value;
+
+    if(argc != 2)
+    {
+        printf("Usage: %s <value>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
     fd = open(DEVICE_PATH, O_RDWR);
     if (fd < 0)
@@ -21,7 +27,7 @@ int main()
     }
 
     // Set value using ioctl
-    value = 100;
+    value = atoi(argv[1]);
     if (ioctl(fd, IOCTL_SET_VALUE, &value) < 0)
     {
         perror("IOCTL SET failed");
