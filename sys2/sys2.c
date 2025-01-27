@@ -85,8 +85,8 @@ static void parse_command(const char *cmd)
 // 设置所有进程的优先级
 static void set_all_task_nice(const char *param)
 {
-    int nice_value;
-    if (sscanf(param, "%d", &nice_value) == 1) {
+    int nice_value = 0;
+    if ((sscanf(param, "%d", &nice_value) >= 1) && (nice_value >= -20 && nice_value <= 19)) {
         struct task_struct *task;
         for_each_process(task) {
             if (task->pid != 0) { // 跳过 init 进程
@@ -103,7 +103,12 @@ static void set_all_task_nice(const char *param)
 static void set_user_nice_by_uid(const char *param)
 {
     int uid, nice_value;
+    bool flag = false;
+
+    //打印函数名和行号
+    // printk(KERN_INFO "calling  %s %i\n", __FUNCTION__, __LINE__);
     if (sscanf(param, "%d %d", &uid, &nice_value) == 2) {
+        // printk(KERN_INFO "calling  %s %i\n", __FUNCTION__, __LINE__);
         struct task_struct *task;
         kuid_t kuid = make_kuid(current_user_ns(), uid);
 
@@ -111,12 +116,21 @@ static void set_user_nice_by_uid(const char *param)
             printk(KERN_ERR "Invalid UID: %d\n", uid);
             return;
         }
+        //判断nice_value是否在范围内
+        if (nice_value < -20 || nice_value > 19) {
+            printk(KERN_ERR "Invalid nice value: %d\n", nice_value);
+            return;
+        }
 
         for_each_process(task) {
             if (task->pid != 0 && uid_eq(task_uid(task), kuid)) { // 跳过 init 进程
                 set_user_nice(task, nice_value);
                 printk(KERN_INFO "Set nice value of process %s (PID: %d, UID: %d) to %d\n", task->comm, task->pid, uid, nice_value);
+                flag = true;
             }
+        }
+        if (!flag) {
+            printk(KERN_ERR "No process found with UID: %d\n", uid);
         }
     } else {
         printk(KERN_ERR "Invalid input format. Expected: setniceuser <uid> <nice_value>\n");
@@ -134,8 +148,8 @@ static struct command_handler command_handlers[] = {
     {"showtask", showtasklist},
     {"showalltask", print_task_info},
     {"parse", parse_command},
-    {"setnice", set_all_task_nice},
     {"setniceuser", set_user_nice_by_uid},
+    {"setnice", set_all_task_nice},
     {NULL, NULL} // 结束标志
 };
 
