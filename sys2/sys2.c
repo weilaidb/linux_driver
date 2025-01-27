@@ -7,11 +7,6 @@
 #include <linux/sched/signal.h>
 #include <linux/ctype.h>
 #include <linux/uaccess.h>
-#include <linux/pid.h>
-#include <linux/fs.h>
-#include <linux/namei.h>
-#include <linux/sched.h>
-#include <linux/cred.h>
 
 // 创建一个 kobject 来表示 /sys/kernel/mymodule
 static struct kobject *mymodule_kobj;
@@ -82,35 +77,19 @@ static void parse_command(const char *cmd)
     kfree(cmd_copy);
 }
 
-// 设置指定用户的进程的优先级
-static void set_user_nice_by_username(const char *username, int nice_value)
+// 设置所有进程的优先级
+static void set_all_task_nice(int nice_value)
 {
     struct task_struct *task;
-    struct user_namespace *user_ns = current_user_ns();
-    struct user_struct *user;
-
-    user = find_user_by_name(user_ns, username);
-    if (!user) {
-        printk(KERN_ERR "User '%s' not found.\n", username);
-        return;
-    }
 
     for_each_process(task)
     {
-        if (task->pid != 0 && task_uid(task) == user->uid) // 跳过 init 进程
+        if (task->pid != 0) // 跳过 init 进程
         {
-            if (set_user_nice(task, nice_value) == 0)
-            {
-                printk(KERN_INFO "Set nice value of process %s (PID: %d, UID: %u) to %d\n", task->comm, task->pid, user->uid, nice_value);
-            }
-            else
-            {
-                printk(KERN_INFO "Failed to set nice value of process %s (PID: %d, UID: %u) to %d\n", task->comm, task->pid, user->uid, nice_value);
-            }
+            set_user_nice(task, nice_value);
+            printk(KERN_INFO "Set nice value of process %s (PID: %d) to %d\n", task->comm, task->pid, nice_value);
         }
     }
-
-    put_user_struct(user);
 }
 
 // sysfs 属性的存储函数
@@ -145,20 +124,6 @@ static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, 
         else
         {
             printk(KERN_ERR "Invalid nice value\n");
-        }
-    }
-    // 如果数据为 "setniceuser"，则设置指定用户的进程的优先级
-    else if (strncmp(my_data, "setniceuser", 11) == 0)
-    {
-        char username[64];
-        int nice_value;
-        if (sscanf(my_data + 12, "%63s %d", username, &nice_value) == 2)
-        {
-            set_user_nice_by_username(username, nice_value);
-        }
-        else
-        {
-            printk(KERN_ERR "Invalid input format. Expected: setniceuser <username> <nice_value>\n");
         }
     }
 
