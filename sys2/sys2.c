@@ -12,6 +12,7 @@
 #include <linux/namei.h>
 #include <linux/sched.h>
 #include <linux/cred.h>
+#include <linux/kallsyms.h>
 
 // 创建一个 kobject 来表示 /sys/kernel/mymodule
 static struct kobject *mymodule_kobj;
@@ -105,10 +106,7 @@ static void set_user_nice_by_uid(const char *param)
     int uid, nice_value;
     bool flag = false;
 
-    //打印函数名和行号
-    // printk(KERN_INFO "calling  %s %i\n", __FUNCTION__, __LINE__);
     if (sscanf(param, "%d %d", &uid, &nice_value) == 2) {
-        // printk(KERN_INFO "calling  %s %i\n", __FUNCTION__, __LINE__);
         struct task_struct *task;
         kuid_t kuid = make_kuid(current_user_ns(), uid);
 
@@ -116,7 +114,7 @@ static void set_user_nice_by_uid(const char *param)
             printk(KERN_ERR "Invalid UID: %d\n", uid);
             return;
         }
-        //判断nice_value是否在范围内
+
         if (nice_value < -20 || nice_value > 19) {
             printk(KERN_ERR "Invalid nice value: %d\n", nice_value);
             return;
@@ -137,6 +135,21 @@ static void set_user_nice_by_uid(const char *param)
     }
 }
 
+// 打印内核符号表中的所有符号
+static void showkernelsymbol(const char *param)
+{
+    // unsigned long addr;
+    // const char *symbol;
+
+    // printk(KERN_INFO "Kernel symbol table:\n");
+    // for (addr = 0; addr < ULONG_MAX; addr += 4) {
+    //     symbol = kallsyms_lookup(addr, NULL, NULL, NULL, NULL);
+    //     if (symbol) {
+    //         printk(KERN_INFO "[%016lx] %s\n", addr, symbol);
+    //     }
+    // }
+}
+
 // 定义命令处理函数的结构体
 struct command_handler {
     const char *cmd;
@@ -150,6 +163,7 @@ static struct command_handler command_handlers[] = {
     {"parse", parse_command},
     {"setniceuser", set_user_nice_by_uid},
     {"setnice", set_all_task_nice},
+    {"showkernelsymbol", showkernelsymbol},
     {NULL, NULL} // 结束标志
 };
 
