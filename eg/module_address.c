@@ -27,7 +27,8 @@ static int __init __module_address_init(void)
 	** 调用__module_address()函数之前，必须禁止中断，以防止模块在执行操作期间被释放
 	**/
 	preempt_disable();
-	ret = __module_address(addr);
+	//ret = __module_address(addr);
+    ret =0;
 	preempt_enable();
 	
 	if(ret != NULL)
