@@ -109,7 +109,7 @@ static ssize_t my_read(struct file *file, char __user *buf, size_t count, loff_t
     ret = copy_to_user(buf, shared_resource, min(count, 1024UL));
     if (ret == 0)
     {
-        pr_info("Read successful\n");
+        pr_info("Read successful:%s\n", shared_resource);
         mutex_unlock(&resource_mutex);
         return 1024;
     }
@@ -132,7 +132,7 @@ static ssize_t my_write(struct file *file, const char __user *buf, size_t count,
     ret = copy_from_user(shared_resource, buf, min(count, 1024UL));
     if (ret == 0)
     {
-        pr_info("Write successful\n");
+        pr_info("Write successful:%s\n", shared_resource);
         mutex_unlock(&resource_mutex);
         return count;
     }
