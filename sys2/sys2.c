@@ -4,7 +4,6 @@
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
 #include <linux/slab.h>
-#include <linux/sched/signal.h>
 #include <linux/ctype.h>
 #include <linux/uaccess.h>
 #include <linux/pid.h>
@@ -13,12 +12,117 @@
 #include <linux/sched.h>
 #include <linux/cred.h>
 #include <linux/kallsyms.h>
+#include <linux/netdevice.h>
+#include <linux/skbuff.h>
+#include <linux/ip.h>
+#include <linux/tcp.h>
+#include <linux/udp.h>
+#include <linux/icmp.h>
+#include <linux/if_vlan.h>
+#include <linux/netfilter.h>
+#include <linux/netfilter_ipv4.h>
 
 // 创建一个 kobject 来表示 /sys/kernel/mymodule
 static struct kobject *mymodule_kobj;
 
+// 定义统计变量
+static unsigned long vlan_stats[4094] = {0}; // VLAN1 到 VLAN4094 的数据包统计
+static unsigned long ip_packets = 0;         // IP 数据包总数
+static unsigned long tcp_packets = 0;        // TCP 数据包总数
+static unsigned long udp_packets = 0;        // UDP 数据包总数
+static unsigned long icmp_packets = 0;       // ICMP 数据包总数
+static unsigned long other_packets = 0;      // 其他未知协议类型的数据包总数
+
+
+
 // 用于存储用户写入的内容
 static char my_data[256] = {0};
+
+// 网络钩子函数
+unsigned int packet_hook(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
+{
+    struct vlan_hdr *vlan_hdr;
+    struct iphdr *ip_header;
+    unsigned int vlan_id = 0;
+
+    // 检查是否是 VLAN 数据包
+    if (skb->protocol == htons(ETH_P_8021Q))
+    {
+        vlan_hdr = (struct vlan_hdr *)skb->data;
+        vlan_id = ntohs(vlan_hdr->h_vlan_TCI) & VLAN_VID_MASK;
+        if (vlan_id >= 1 && vlan_id <= 4094)
+        {
+            vlan_stats[vlan_id - 1]++; // VLAN 数据包统计
+        }
+        skb_pull(skb, sizeof(struct vlan_hdr)); // 跳过 VLAN 头部
+        skb_reset_network_header(skb);          // 确保 data 指向 IP 头部
+    }
+
+    // 检查是否是 IP 数据包
+    if (skb->protocol == htons(ETH_P_IP) || skb->protocol == htons(ETH_P_IPV6))
+    {
+        ip_header = ip_hdr(skb); // 使用宏获取 IP 头部
+        ip_packets++;            // IP 数据包统计
+
+        // 根据协议类型统计 TCP、UDP 和 ICMP 数据包
+        switch (ip_header->protocol)
+        {
+        case IPPROTO_TCP:
+            tcp_packets++;
+            pr_info("TCP packet: Source IP: %pI4, Destination IP: %pI4, Source Port: %d, Destination Port: %d\n",
+                    &ip_header->saddr, &ip_header->daddr,
+                    ntohs(((struct tcphdr *)(skb->data + sizeof(struct iphdr)))->source),
+                    ntohs(((struct tcphdr *)(skb->data + sizeof(struct iphdr)))->dest));
+            break;
+        case IPPROTO_UDP:
+            udp_packets++;
+            pr_info("UDP packet: Source IP: %pI4, Destination IP: %pI4, Source Port: %d, Destination Port: %d\n",
+                    &ip_header->saddr, &ip_header->daddr,
+                    ntohs(((struct udphdr *)(skb->data + sizeof(struct iphdr)))->source),
+                    ntohs(((struct udphdr *)(skb->data + sizeof(struct iphdr)))->dest));
+            break;
+        case IPPROTO_ICMP:
+            icmp_packets++;
+            pr_info("ICMP packet: Source IP: %pI4, Destination IP: %pI4, Type: %d, Code: %d\n",
+                    &ip_header->saddr, &ip_header->daddr,
+                    ((struct icmphdr *)(skb->data + sizeof(struct iphdr)))->type,
+                    ((struct icmphdr *)(skb->data + sizeof(struct iphdr)))->code);
+            break;
+        default:
+            other_packets++; // 其他未知协议类型的数据包统计
+            break;
+        }
+    }
+    else
+    {
+        other_packets++; // 其他未知协议类型的数据包统计
+    }
+
+    return NF_ACCEPT; // 允许数据包继续传输
+}
+
+// 定义全局的 nf_hook_ops 结构体
+static struct nf_hook_ops nf_ops = {
+    .hook = packet_hook,
+    .pf = NFPROTO_IPV4,
+    .hooknum = NF_INET_PRE_ROUTING,
+    .priority = NF_IP_PRI_FIRST,
+};
+
+// 注册网络钩子
+static int register_net_hooks(void)
+{
+    nf_register_net_hook(&init_net, &nf_ops);
+    return 0;
+}
+
+// 注销网络钩子
+static void unregister_net_hooks(void)
+{
+    nf_unregister_net_hook(&init_net, &nf_ops);
+    nf_ops.hook = NULL; // 注销后将钩子函数指针设置为 NULL
+}
+
 
 // sysfs 属性的显示函数
 static ssize_t my_data_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -197,18 +301,27 @@ static int __init mymodule_init(void)
 {
     int ret;
 
-    // 创建一个 kobject 并将其添加到 /sys/kernel 下
     mymodule_kobj = kobject_create_and_add("mymodule", kernel_kobj);
-    if (!mymodule_kobj) {
+    if (!mymodule_kobj)
+    {
         printk(KERN_ERR "Failed to create kobject\n");
         return -ENOMEM;
     }
 
-    // 创建 sysfs 属性
     ret = sysfs_create_file(mymodule_kobj, &my_data_attr.attr);
-    if (ret) {
+    if (ret)
+    {
         kobject_put(mymodule_kobj);
         printk(KERN_ERR "Failed to create sysfs file\n");
+        return ret;
+    }
+
+    ret = register_net_hooks();
+    if (ret)
+    {
+        sysfs_remove_file(mymodule_kobj, &my_data_attr.attr);
+        kobject_put(mymodule_kobj);
+        printk(KERN_ERR "Failed to register net hooks\n");
         return ret;
     }
 
@@ -216,9 +329,9 @@ static int __init mymodule_init(void)
     return 0;
 }
 
-// 模块卸载函数
 static void __exit mymodule_exit(void)
 {
+    unregister_net_hooks();
     sysfs_remove_file(mymodule_kobj, &my_data_attr.attr);
     kobject_put(mymodule_kobj);
     printk(KERN_INFO "My module unloaded.\n");
@@ -226,6 +339,7 @@ static void __exit mymodule_exit(void)
 
 module_init(mymodule_init);
 module_exit(mymodule_exit);
+
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("A simple module to create a sysfs entry under /sys/kernel");
