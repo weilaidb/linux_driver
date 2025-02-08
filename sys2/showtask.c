@@ -145,15 +145,53 @@ void showallthread(const char *param)
 {
     struct task_struct *task, *thread;
 
-    printk(KERN_INFO "All Threads:\n");
+    // 打印标题
+    printk(KERN_INFO "%-6s%-10s%-30s%-10s%s\n", "PID", "TID", "Name", "Priority", "Policy");
+    printk(KERN_INFO "--------------------------------------------------------------------------------\n");
+
     // 遍历所有进程
     for_each_process(task)
     {
         // 遍历当前进程的所有线程
         for_each_thread(task, thread)
         {
-            printk(KERN_INFO "Thread: PID=%d, TID=%d, COMM=%s\n",
-                   task_pid_nr(task), task_pid_nr(thread), thread->comm);
+            // 获取线程的优先级和调度策略
+            int prio = thread->prio;     // 线程的动态优先级
+            int policy = thread->policy; // 线程的调度策略
+
+            // 将调度策略转换为字符串
+            const char *policy_str;
+            switch (policy)
+            {
+            case SCHED_NORMAL:
+                policy_str = "SCHED_NORMAL";
+                break;
+            case SCHED_FIFO:
+                policy_str = "SCHED_FIFO";
+                break;
+            case SCHED_RR:
+                policy_str = "SCHED_RR";
+                break;
+            case SCHED_BATCH:
+                policy_str = "SCHED_BATCH";
+                break;
+            case SCHED_IDLE:
+                policy_str = "SCHED_IDLE";
+                break;
+            case SCHED_DEADLINE:
+                policy_str = "SCHED_DEADLINE";
+                break;
+            default:
+                policy_str = "UNKNOWN";
+            }
+
+            // 打印线程信息
+            printk(KERN_INFO "%-6d%-10d%-30s%-10d%s\n",
+                   task_pid_nr(task),   // 进程 ID
+                   task_pid_nr(thread), // 线程 ID
+                   thread->comm,        // 线程名称
+                   prio,                // 线程优先级
+                   policy_str);         // 调度策略
         }
     }
 }
