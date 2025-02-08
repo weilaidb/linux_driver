@@ -15,5 +15,7 @@ cat /sys/kernel/mymodule/my_data
 # 更新网口mtu
 echo setmtu ens33 1500 > /sys/kernel/mymodule/my_data && dmesg -c
 echo setmtu ens33 100 > /sys/kernel/mymodule/my_data && dmesg -c
+echo setmtu ens33 500 > /sys/kernel/mymodule/my_data && dmesg -c
+echo setmtu ens33 9000 > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
 
