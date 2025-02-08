@@ -275,7 +275,7 @@ void setmtu(const char *param)
 int clearinterface_in(const char *param)
 {
     struct net_device *dev = NULL;
-    char interface_name[IFNAMSIZ];
+    char interface_name[IFNAMSIZ] = {0};
 
     // 检查输入是否为空
     if (!param || strlen(param) == 0)

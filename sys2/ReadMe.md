@@ -22,3 +22,9 @@ cat /sys/kernel/mymodule/my_data
 # 清除网口统计
 echo clearinterface ens33 > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
+ifconfig ens33
+
+- lo无法清除统计信息，why?
+echo clearinterface lo > /sys/kernel/mymodule/my_data && dmesg -c
+cat /sys/kernel/mymodule/my_data
+ifconfig lo
