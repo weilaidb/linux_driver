@@ -1,4 +1,5 @@
 obj-m += sys2.o
+# obj-m += showtask.o
 obj-m += ../common/dbgmsg.o
 #generate the path
 CURRENT_PATH:=$(shell pwd)
