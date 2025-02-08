@@ -7,5 +7,8 @@ echo setthreadpriority 31065 10 > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
 
 # 打印网口统计
-echo showinterface eth2 > /sys/kernel/mymodule/my_data && dmesg -c
+echo showinterface lo > /sys/kernel/mymodule/my_data && dmesg -c
+echo showinterface ens33 > /sys/kernel/mymodule/my_data && dmesg -c
+echo showinterface ens38 > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
+

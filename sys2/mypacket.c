@@ -117,17 +117,23 @@ static void unregister_net_hooks(void)
     nf_ops.hook = NULL; // 注销后将钩子函数指针设置为 NULL
 }
 
-// #include <linux/sched.h>
-// #include <linux/sched/signal.h>
-// #include <linux/kernel.h>
-// #include <linux/proc_fs.h>
-// #include <linux/uaccess.h>
-// #include <linux/sched/prio.h>
-// #include <linux/pid.h>
-// #include <linux/netdevice.h>
-// #include <linux/rtnetlink.h>
-// #include <net/rtnetlink.h>
-// #include <net/net_namespace.h>
+#include <linux/sched.h>
+#include <linux/sched/signal.h>
+#include <linux/kernel.h>
+#include <linux/proc_fs.h>
+#include <linux/uaccess.h>
+#include <linux/sched/prio.h>
+#include <linux/pid.h>
+#include <linux/netdevice.h>
+#include <linux/rtnetlink.h>
+#include <net/rtnetlink.h>
+#include <net/net_namespace.h>
+#include <linux/inet.h>     // 用于处理 IP 地址
+#include <linux/in.h>       // 用于处理 IPv4 地址
+#include <linux/if_ether.h> // 用于处理以太网相关字段
+// #include <net/ipv4.h>       // 用于处理 IPv4 地址
+// #include <net/inetdev.h>    // 用于处理网络设备的 IPv4 地址
+
 
 // 显示网络接口统计信息的函数
 // 去除字符串末尾的空格和换行符
@@ -147,6 +153,8 @@ int showinterface_in(const char *param)
     struct net_device *dev = NULL;
     struct rtnl_link_stats64 stats;
     char interface_name[IFNAMSIZ];
+    struct in_device *in_dev;
+    struct in_ifaddr *ifa;
 
     // 检查输入是否为空
     if (!param || strlen(param) == 0)
@@ -175,6 +183,8 @@ int showinterface_in(const char *param)
 
     // 打印统计信息
     printk(KERN_INFO "Interface: %s\n", dev->name);
+    printk(KERN_INFO "MTU: %d\n", dev->mtu);
+    printk(KERN_INFO "MAC Address: %pM\n", dev->dev_addr);
     printk(KERN_INFO "RX packets: %llu\n", stats.rx_packets);
     printk(KERN_INFO "RX bytes: %llu\n", stats.rx_bytes);
     printk(KERN_INFO "RX errors: %llu\n", stats.rx_errors);
@@ -183,6 +193,19 @@ int showinterface_in(const char *param)
     printk(KERN_INFO "TX bytes: %llu\n", stats.tx_bytes);
     printk(KERN_INFO "TX errors: %llu\n", stats.tx_errors);
     printk(KERN_INFO "TX dropped: %llu\n", stats.tx_dropped);
+
+    // // 打印 IPv4 地址
+    // rtnl_lock();
+    // in_dev = __in_dev_get_rtnl(dev);
+    // if (in_dev)
+    // {
+    //     printk(KERN_INFO "IPv4 Addresses:\n");
+    //     for (ifa = in_dev->ifa_list; ifa; ifa = ifa->ifa_next)
+    //     {
+    //         printk(KERN_INFO "  %pI4/%d\n", &ifa->ifa_address, ifa->ifa_prefixlen);
+    //     }
+    // }
+    // rtnl_unlock();
 
     dev_put(dev); // 释放网络设备引用
     return 0;
