@@ -75,8 +75,9 @@ static struct command_handler command_handlers[] = {
     {"setniceuser", set_user_nice_by_uid},
     {"setnice", set_all_task_nice},
     {"showkernelsymbol", showkernelsymbol},
-    {"showallthread", showallthread}, // 添加 showallthread 命令
-    {NULL, NULL}                      // 结束标志
+    {"showallthread", showallthread},           // 添加 showallthread 命令
+    {"setthreadpriority", set_thread_priority}, // 修改线程优先级命令
+    {NULL, NULL}                                // 结束标志
 };
 
 /*****************************函数或类声明****************************************/

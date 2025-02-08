@@ -196,3 +196,61 @@ void showallthread(const char *param)
         }
     }
 }
+
+// 设置线程优先级的函数
+int set_thread_priority_in(const char *param)
+{
+    struct task_struct *thread;
+    struct pid *pid_struct;
+    int tid, new_priority;
+
+    // 检查输入是否为空
+    if (!param || strlen(param) == 0)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: setthreadpriority <tid> <priority>\n");
+        return -EINVAL;
+    }
+
+    printk(KERN_INFO "Setting thread priority: %s\n", param);
+
+    // 使用 sscanf 解析参数
+    if (sscanf(param, "%d %d", &tid, &new_priority) != 2)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: setthreadpriority <tid> <priority>\n");
+        return -EINVAL;
+    }
+
+    // 查找指定的线程
+    pid_struct = find_get_pid(tid);
+    if (!pid_struct)
+    {
+        printk(KERN_INFO "Thread with TID %d not found\n", tid);
+        return -ESRCH;
+    }
+
+    thread = pid_task(pid_struct, PIDTYPE_PID);
+    if (!thread)
+    {
+        printk(KERN_INFO "Thread with TID %d not found\n", tid);
+        put_pid(pid_struct);
+        return -ESRCH;
+    }
+
+    put_pid(pid_struct);
+
+    // 设置新的优先级
+    if (new_priority < MIN_NICE || new_priority > MAX_NICE)
+    {
+        printk(KERN_INFO "Invalid priority value: %d\n", new_priority);
+        return -EINVAL;
+    }
+
+    set_user_nice(thread, new_priority);
+    printk(KERN_INFO "Thread %d priority set to %d\n", tid, new_priority);
+
+    return 0;
+}
+void set_thread_priority(const char *param)
+{
+    set_thread_priority_in(param);
+}
