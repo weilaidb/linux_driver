@@ -116,3 +116,79 @@ static void unregister_net_hooks(void)
     nf_unregister_net_hook(&init_net, &nf_ops);
     nf_ops.hook = NULL; // 注销后将钩子函数指针设置为 NULL
 }
+
+// #include <linux/sched.h>
+// #include <linux/sched/signal.h>
+// #include <linux/kernel.h>
+// #include <linux/proc_fs.h>
+// #include <linux/uaccess.h>
+// #include <linux/sched/prio.h>
+// #include <linux/pid.h>
+// #include <linux/netdevice.h>
+// #include <linux/rtnetlink.h>
+// #include <net/rtnetlink.h>
+// #include <net/net_namespace.h>
+
+// 显示网络接口统计信息的函数
+// 去除字符串末尾的空格和换行符
+static void trim_trailing_whitespace(char *str)
+{
+    char *end = str + strlen(str) - 1;
+    while (end > str && isspace(*end))
+    {
+        *end = '\0';
+        end--;
+    }
+}
+
+// 显示网络接口统计信息的函数
+int showinterface_in(const char *param)
+{
+    struct net_device *dev = NULL;
+    struct rtnl_link_stats64 stats;
+    char interface_name[IFNAMSIZ];
+
+    // 检查输入是否为空
+    if (!param || strlen(param) == 0)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: showinterface <interface_name>\n");
+        return -EINVAL;
+    }
+
+    // 复制接口名称并去除末尾的空格和换行符
+    strncpy(interface_name, param, IFNAMSIZ - 1);
+    interface_name[IFNAMSIZ - 1] = '\0';
+    trim_trailing_whitespace(interface_name);
+
+    printk(KERN_INFO "Showing interface statistics: %s\n", interface_name);
+
+    // 查找指定的网络接口
+    dev = dev_get_by_name(&init_net, interface_name);
+    if (!dev)
+    {
+        printk(KERN_INFO "Interface %s not found\n", interface_name);
+        return -ENODEV;
+    }
+
+    // 获取网络接口的统计信息
+    dev_get_stats(dev, &stats);
+
+    // 打印统计信息
+    printk(KERN_INFO "Interface: %s\n", dev->name);
+    printk(KERN_INFO "RX packets: %llu\n", stats.rx_packets);
+    printk(KERN_INFO "RX bytes: %llu\n", stats.rx_bytes);
+    printk(KERN_INFO "RX errors: %llu\n", stats.rx_errors);
+    printk(KERN_INFO "RX dropped: %llu\n", stats.rx_dropped);
+    printk(KERN_INFO "TX packets: %llu\n", stats.tx_packets);
+    printk(KERN_INFO "TX bytes: %llu\n", stats.tx_bytes);
+    printk(KERN_INFO "TX errors: %llu\n", stats.tx_errors);
+    printk(KERN_INFO "TX dropped: %llu\n", stats.tx_dropped);
+
+    dev_put(dev); // 释放网络设备引用
+    return 0;
+}
+
+void showinterface(const char *param)
+{
+    showinterface_in(param);
+}
