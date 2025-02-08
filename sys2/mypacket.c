@@ -215,3 +215,58 @@ void showinterface(const char *param)
 {
     showinterface_in(param);
 }
+
+// 设置网络接口的 MTU 值
+int setmtu_in(const char *param)
+{
+    struct net_device *dev = NULL;
+    char interface_name[IFNAMSIZ];
+    int new_mtu;
+
+    // 检查输入是否为空
+    if (!param || strlen(param) == 0)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: setmtu <interface_name> <mtu_value>\n");
+        return -EINVAL;
+    }
+
+    // 解析参数
+    if (sscanf(param, "%s %d", interface_name, &new_mtu) != 2)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: setmtu <interface_name> <mtu_value>\n");
+        return -EINVAL;
+    }
+
+    // 去除接口名称末尾的空格和换行符
+    trim_trailing_whitespace(interface_name);
+
+    printk(KERN_INFO "Setting MTU for interface: %s to %d\n", interface_name, new_mtu);
+
+    // 查找指定的网络接口
+    dev = dev_get_by_name(&init_net, interface_name);
+    if (!dev)
+    {
+        printk(KERN_INFO "Interface %s not found\n", interface_name);
+        return -ENODEV;
+    }
+
+    // 设置新的 MTU 值
+    if (new_mtu < 68 || new_mtu > 65535) // MTU 值范围
+    {
+        printk(KERN_INFO "Invalid MTU value: %d. Valid range is 68 to 65535\n", new_mtu);
+        dev_put(dev);
+        return -EINVAL;
+    }
+
+    dev->mtu = new_mtu;
+    printk(KERN_INFO "MTU for interface %s set to %d\n", dev->name, dev->mtu);
+
+    dev_put(dev); // 释放网络设备引用
+    return 0;
+}
+
+
+void setmtu(const char *param)
+{
+    setmtu_in(param);
+}

@@ -12,3 +12,8 @@ echo showinterface ens33 > /sys/kernel/mymodule/my_data && dmesg -c
 echo showinterface ens38 > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
 
+# 更新网口mtu
+echo setmtu ens33 1500 > /sys/kernel/mymodule/my_data && dmesg -c
+echo setmtu ens33 100 > /sys/kernel/mymodule/my_data && dmesg -c
+cat /sys/kernel/mymodule/my_data
+
