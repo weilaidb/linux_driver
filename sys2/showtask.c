@@ -140,4 +140,20 @@ static void set_user_nice_by_uid(const char *param)
         printk(KERN_ERR "Invalid input format. Expected: setniceuser <uid> <nice_value>\n");
     }
 }
+// 打印所有线程的函数
+void showallthread(const char *param)
+{
+    struct task_struct *task, *thread;
 
+    printk(KERN_INFO "All Threads:\n");
+    // 遍历所有进程
+    for_each_process(task)
+    {
+        // 遍历当前进程的所有线程
+        for_each_thread(task, thread)
+        {
+            printk(KERN_INFO "Thread: PID=%d, TID=%d, COMM=%s\n",
+                   task_pid_nr(task), task_pid_nr(thread), thread->comm);
+        }
+    }
+}

@@ -63,24 +63,24 @@ unsigned int packet_hook(void *priv, struct sk_buff *skb, const struct nf_hook_s
         {
         case IPPROTO_TCP:
             tcp_packets++;
-            pr_info("TCP packet: Source IP: %pI4, Destination IP: %pI4, Source Port: %d, Destination Port: %d\n",
-                    &ip_header->saddr, &ip_header->daddr,
-                    ntohs(((struct tcphdr *)(skb->data + sizeof(struct iphdr)))->source),
-                    ntohs(((struct tcphdr *)(skb->data + sizeof(struct iphdr)))->dest));
+            // pr_info("TCP packet: Source IP: %pI4, Destination IP: %pI4, Source Port: %d, Destination Port: %d\n",
+            //         &ip_header->saddr, &ip_header->daddr,
+            //         ntohs(((struct tcphdr *)(skb->data + sizeof(struct iphdr)))->source),
+            //         ntohs(((struct tcphdr *)(skb->data + sizeof(struct iphdr)))->dest));
             break;
         case IPPROTO_UDP:
             udp_packets++;
-            pr_info("UDP packet: Source IP: %pI4, Destination IP: %pI4, Source Port: %d, Destination Port: %d\n",
-                    &ip_header->saddr, &ip_header->daddr,
-                    ntohs(((struct udphdr *)(skb->data + sizeof(struct iphdr)))->source),
-                    ntohs(((struct udphdr *)(skb->data + sizeof(struct iphdr)))->dest));
+            // pr_info("UDP packet: Source IP: %pI4, Destination IP: %pI4, Source Port: %d, Destination Port: %d\n",
+            //         &ip_header->saddr, &ip_header->daddr,
+            //         ntohs(((struct udphdr *)(skb->data + sizeof(struct iphdr)))->source),
+            //         ntohs(((struct udphdr *)(skb->data + sizeof(struct iphdr)))->dest));
             break;
         case IPPROTO_ICMP:
             icmp_packets++;
-            pr_info("ICMP packet: Source IP: %pI4, Destination IP: %pI4, Type: %d, Code: %d\n",
-                    &ip_header->saddr, &ip_header->daddr,
-                    ((struct icmphdr *)(skb->data + sizeof(struct iphdr)))->type,
-                    ((struct icmphdr *)(skb->data + sizeof(struct iphdr)))->code);
+            // pr_info("ICMP packet: Source IP: %pI4, Destination IP: %pI4, Type: %d, Code: %d\n",
+            //         &ip_header->saddr, &ip_header->daddr,
+            //         ((struct icmphdr *)(skb->data + sizeof(struct iphdr)))->type,
+            //         ((struct icmphdr *)(skb->data + sizeof(struct iphdr)))->code);
             break;
         default:
             other_packets++; // 其他未知协议类型的数据包统计

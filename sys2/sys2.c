@@ -25,6 +25,7 @@
 #include <linux/fs.h>
 #include <linux/namei.h>
 #include <linux/sched.h>
+#include <linux/sched/signal.h>
 #include <linux/cred.h>
 #include <linux/kallsyms.h>
 #include <linux/netdevice.h>
@@ -36,6 +37,8 @@
 #include <linux/if_vlan.h>
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
+
+
 
 //引用头文件不行，先引用源文件
 #include "showtask.c"
@@ -72,9 +75,9 @@ static struct command_handler command_handlers[] = {
     {"setniceuser", set_user_nice_by_uid},
     {"setnice", set_all_task_nice},
     {"showkernelsymbol", showkernelsymbol},
-    {NULL, NULL} // 结束标志
+    {"showallthread", showallthread}, // 添加 showallthread 命令
+    {NULL, NULL}                      // 结束标志
 };
-
 
 /*****************************函数或类声明****************************************/
 
