@@ -140,13 +140,35 @@ static void set_user_nice_by_uid(const char *param)
         printk(KERN_ERR "Invalid input format. Expected: setniceuser <uid> <nice_value>\n");
     }
 }
+// 将调度策略转换为字符串
+static const char *get_policy_str(int policy)
+{
+    switch (policy)
+    {
+    case SCHED_NORMAL:
+        return "SCHED_NORMAL";
+    case SCHED_FIFO:
+        return "SCHED_FIFO";
+    case SCHED_RR:
+        return "SCHED_RR";
+    case SCHED_BATCH:
+        return "SCHED_BATCH";
+    case SCHED_IDLE:
+        return "SCHED_IDLE";
+    case SCHED_DEADLINE:
+        return "SCHED_DEADLINE";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 // 打印所有线程的函数
 void showallthread(const char *param)
 {
     struct task_struct *task, *thread;
 
     // 打印标题
-    printk(KERN_INFO "%-6s%-10s%-30s%-10s%s\n", "PID", "TID", "Name", "Priority", "Policy");
+    printk(KERN_INFO "%-6s%-10s%-30s%-10s%-6s%s\n", "PID", "TID", "Name", "Priority", "Nice", "Policy");
     printk(KERN_INFO "--------------------------------------------------------------------------------\n");
 
     // 遍历所有进程
@@ -156,41 +178,20 @@ void showallthread(const char *param)
         for_each_thread(task, thread)
         {
             // 获取线程的优先级和调度策略
-            int prio = thread->prio;     // 线程的动态优先级
-            int policy = thread->policy; // 线程的调度策略
+            int prio = thread->prio;      // 线程的动态优先级
+            int nice = task_nice(thread); // 线程的 nice 值
+            int policy = thread->policy;  // 线程的调度策略
 
             // 将调度策略转换为字符串
-            const char *policy_str;
-            switch (policy)
-            {
-            case SCHED_NORMAL:
-                policy_str = "SCHED_NORMAL";
-                break;
-            case SCHED_FIFO:
-                policy_str = "SCHED_FIFO";
-                break;
-            case SCHED_RR:
-                policy_str = "SCHED_RR";
-                break;
-            case SCHED_BATCH:
-                policy_str = "SCHED_BATCH";
-                break;
-            case SCHED_IDLE:
-                policy_str = "SCHED_IDLE";
-                break;
-            case SCHED_DEADLINE:
-                policy_str = "SCHED_DEADLINE";
-                break;
-            default:
-                policy_str = "UNKNOWN";
-            }
+            const char *policy_str = get_policy_str(policy);
 
             // 打印线程信息
-            printk(KERN_INFO "%-6d%-10d%-30s%-10d%s\n",
+            printk(KERN_INFO "%-6d%-10d%-30s%-10d%-6d%s\n",
                    task_pid_nr(task),   // 进程 ID
                    task_pid_nr(thread), // 线程 ID
                    thread->comm,        // 线程名称
                    prio,                // 线程优先级
+                   nice,                // 线程的 nice 值
                    policy_str);         // 调度策略
         }
     }
