@@ -79,6 +79,7 @@ static struct command_handler command_handlers[] = {
     {"setthreadpriority", set_thread_priority}, // 修改线程优先级命令
     {"showinterface", showinterface},           // 显示网络接口信息
     {"setmtu", setmtu},                         // 修改网络接口 MTU 命令
+    {"clearinterface", clearinterface},         // 清除网络接口信息
     {NULL, NULL}                                // 结束标志
 };
 

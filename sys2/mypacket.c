@@ -270,3 +270,45 @@ void setmtu(const char *param)
 {
     setmtu_in(param);
 }
+
+// 清除网络接口的统计信息
+int clearinterface_in(const char *param)
+{
+    struct net_device *dev = NULL;
+    char interface_name[IFNAMSIZ];
+
+    // 检查输入是否为空
+    if (!param || strlen(param) == 0)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: clearinterface <interface_name>\n");
+        return -EINVAL;
+    }
+
+    // 复制接口名称并去除末尾的空格和换行符
+    strncpy(interface_name, param, IFNAMSIZ - 1);
+    interface_name[IFNAMSIZ - 1] = '\0';
+    trim_trailing_whitespace(interface_name);
+
+    printk(KERN_INFO "Clearing statistics for interface: %s\n", interface_name);
+
+    // 查找指定的网络接口
+    dev = dev_get_by_name(&init_net, interface_name);
+    if (!dev)
+    {
+        printk(KERN_INFO "Interface %s not found\n", interface_name);
+        return -ENODEV;
+    }
+
+    // 清除统计信息
+    memset(&dev->stats, 0, sizeof(struct rtnl_link_stats64));
+
+    printk(KERN_INFO "Statistics for interface %s have been cleared\n", dev->name);
+
+    dev_put(dev); // 释放网络设备引用
+    return 0;
+}
+
+void clearinterface(const char *param)
+{
+    clearinterface_in(param);
+}
