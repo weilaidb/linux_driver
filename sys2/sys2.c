@@ -38,13 +38,13 @@
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
 
+// 控制功能块
+//  #define OPEN_SHOWROUTE
 
-
-//引用头文件不行，先引用源文件
+// 引用头文件不行，先引用源文件
 #include "showtask.c"
 #include "parse.c"
 #include "mypacket.c"
-
 
 /*****************************宏定义****************************************/
 
@@ -80,6 +80,9 @@ static struct command_handler command_handlers[] = {
     {"showinterface", showinterface},           // 显示网络接口信息
     {"setmtu", setmtu},                         // 修改网络接口 MTU 命令
     {"clearinterface", clearinterface},         // 清除网络接口信息
+    #ifdef OPEN_SHOWROUTE
+    {"showroute", showroute},                   // 显示内核路由信息
+    #endif
     {NULL, NULL}                                // 结束标志
 };
 
@@ -92,7 +95,6 @@ static ssize_t my_data_show(struct kobject *kobj, struct kobj_attribute *attr, c
 {
     return sprintf(buf, "%s\n", my_data);
 }
-
 
 // sysfs 属性的存储函数
 static ssize_t my_data_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)

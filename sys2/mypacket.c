@@ -312,3 +312,60 @@ void clearinterface(const char *param)
 {
     clearinterface_in(param);
 }
+
+#ifdef OPEN_SHOWROUTE
+#include <linux/sched.h>
+#include <linux/sched/signal.h>
+#include <linux/kernel.h>
+#include <linux/proc_fs.h>
+#include <linux/uaccess.h>
+#include <linux/sched/prio.h>
+#include <linux/pid.h>
+#include <linux/netdevice.h>
+#include <linux/rtnetlink.h>
+#include <net/rtnetlink.h>
+#include <net/net_namespace.h>
+#include <linux/inet.h>
+#include <linux/in.h>
+#include <linux/if_ether.h>
+#include <net/fib_rules.h>
+#include <net/ip.h>
+#include <net/route.h>
+
+// 显示内核路由表的内容
+int showroute_in(const char *param)
+{
+    struct fib_table *main_table;
+    struct fib_result res;
+    struct flowi4 fl4 = { .daddr = htonl(INADDR_NONE) };
+
+    main_table = fib_get_table(&init_net, RT_TABLE_MAIN);
+    if (!main_table)
+    {
+        printk(KERN_INFO "Main routing table not found\n");
+        return -ENODEV;
+    }
+
+    printk(KERN_INFO "Routing Table:\n");
+    printk(KERN_INFO "Destination\tGateway\t\tDevice\n");
+
+    rcu_read_lock();
+    int err = fib_table_lookup(main_table, &fl4, &res, FIB_LOOKUP_NOREF);
+    rcu_read_unlock();
+
+    if (err == 0 && res.fi)
+    {
+        struct fib_nh *nh = fib_info_nh(res.fi, 0); // 获取第一个下一跳
+        printk(KERN_INFO "Destination: %pI4, Gateway: %pI4, Device: %s\n",
+               &res.fi->fib_dst, &nh->nh_gw, nh->nh_dev->name);
+    }
+
+    return 0;
+}
+
+void showroute(const char *param)
+{
+    showroute_in(param);
+}
+
+#endif
