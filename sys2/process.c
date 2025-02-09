@@ -56,9 +56,10 @@ int showprocessfd_in(const char *param)
     struct files_struct *files;
     struct file *file;
     int fd;
+    int total_fd_count = 0; // 总文件描述符计数器
 
     printk(KERN_INFO "All open file descriptors:\n");
-    printk(KERN_INFO "PID\tFD\tType\tSize\n");
+    printk(KERN_INFO "%-8s%-8s%-10s%-15s%-15s\n", "PID", "FD", "Type", "RecvBufSize", "SendBufSize");
 
     // 遍历所有进程
     for_each_process(task)
@@ -66,6 +67,8 @@ int showprocessfd_in(const char *param)
         files = task->files;
         if (!files)
             continue;
+
+        int process_fd_count = 0; // 每个进程的文件描述符计数器
 
         // 遍历进程的文件描述符
         rcu_read_lock();
@@ -75,6 +78,9 @@ int showprocessfd_in(const char *param)
             file = fdt->fd[fd];
             if (!file)
                 continue;
+
+            process_fd_count++; // 增加进程的文件描述符计数
+            total_fd_count++;   // 增加总文件描述符计数
 
             // 获取文件描述符的类型和大小
             char type[10];
@@ -112,10 +118,35 @@ int showprocessfd_in(const char *param)
             }
 
             // 打印文件描述符信息
-            printk(KERN_INFO "%d\t%d\t%s\t%zu\n", task_pid_nr(task), fd, type, file_inode(file)->i_size);
+            if (strcmp(type, "SOCKET") == 0)
+            {
+                struct socket *sock = file->private_data;
+                if (sock)
+                {
+                    struct sock *sk = sock->sk;
+                    if (sk)
+                    {
+                        printk(KERN_INFO "%-8d%-8d%-10s%-15d%-15d\n",
+                               task_pid_nr(task), fd, type,
+                               sk->sk_rcvbuf, sk->sk_sndbuf);
+                    }
+                }
+            }
+            else
+            {
+                printk(KERN_INFO "%-8d%-8d%-10s%-15zu%-15zu\n",
+                       task_pid_nr(task), fd, type,
+                       file_inode(file)->i_size, file_inode(file)->i_size);
+            }
         }
         rcu_read_unlock();
+
+        // 打印每个进程的文件描述符数量
+        printk(KERN_INFO "Process %d has %d file descriptors open.\n", task_pid_nr(task), process_fd_count);
     }
+
+    // 打印总文件描述符数量
+    printk(KERN_INFO "Total file descriptors open: %d\n", total_fd_count);
 
     return 0;
 }
