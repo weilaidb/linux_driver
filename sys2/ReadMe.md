@@ -28,3 +28,8 @@ ifconfig ens33
 echo clearinterface lo > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
 ifconfig lo
+
+
+# 显示系统文件描述符
+echo showprocessfd > /sys/kernel/mymodule/my_data && dmesg -c
+cat /sys/kernel/mymodule/my_data

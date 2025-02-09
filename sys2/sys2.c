@@ -40,11 +40,13 @@
 
 // 控制功能块
 //  #define OPEN_SHOWROUTE
+#define OPEN_SHOWPROCESSFD
 
 // 引用头文件不行，先引用源文件
 #include "showtask.c"
 #include "parse.c"
 #include "mypacket.c"
+#include "process.c"
 
 /*****************************宏定义****************************************/
 
@@ -80,10 +82,14 @@ static struct command_handler command_handlers[] = {
     {"showinterface", showinterface},           // 显示网络接口信息
     {"setmtu", setmtu},                         // 修改网络接口 MTU 命令
     {"clearinterface", clearinterface},         // 清除网络接口信息
-    #ifdef OPEN_SHOWROUTE
-    {"showroute", showroute},                   // 显示内核路由信息
+#ifdef OPEN_SHOWROUTE
+    {"showroute", showroute}, // 显示内核路由信息
+#endif
+    // {"showsocket", showsocket},       // 显示套接字信息
+    #ifdef OPEN_SHOWPROCESSFD
+    {"showprocessfd", showprocessfd}, // 显示进程打开的文件描述符
     #endif
-    {NULL, NULL}                                // 结束标志
+    {NULL, NULL}                      // 结束标志
 };
 
 /*****************************函数或类声明****************************************/
