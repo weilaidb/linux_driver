@@ -33,3 +33,10 @@ ifconfig lo
 # 显示系统文件描述符
 echo showprocessfd > /sys/kernel/mymodule/my_data && dmesg -c
 cat /sys/kernel/mymodule/my_data
+
+# 设置进程文件描述符 socket 缓冲区大小 
+echo setsocketsize 1 196 38085 38085 > /sys/kernel/mymodule/my_data && dmesg -c
+cat /sys/kernel/mymodule/my_data
+
+
+

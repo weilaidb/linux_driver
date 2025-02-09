@@ -39,8 +39,9 @@
 #include <linux/netfilter_ipv4.h>
 
 // 控制功能块
-//  #define OPEN_SHOWROUTE
-#define OPEN_SHOWPROCESSFD
+//  #define OPEN_SHOWROUTE // 显示内核路由信息
+#define OPEN_SHOWPROCESSFD // 显示进程打开的文件描述符
+#define OPEN_SETSOCKETSIZE // 设置套接字缓冲区大小
 
 // 引用头文件不行，先引用源文件
 #include "showtask.c"
@@ -88,6 +89,9 @@ static struct command_handler command_handlers[] = {
     // {"showsocket", showsocket},       // 显示套接字信息
     #ifdef OPEN_SHOWPROCESSFD
     {"showprocessfd", showprocessfd}, // 显示进程打开的文件描述符
+    #endif
+    #ifdef OPEN_SETSOCKETSIZE
+    {"setsocketsize", setsocketsize}, // 设置套接字缓冲区大小，包含接收和发送缓冲区
     #endif
     {NULL, NULL}                      // 结束标志
 };

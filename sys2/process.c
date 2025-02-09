@@ -84,7 +84,11 @@ int showprocessfd_in(const char *param)
 
             // 获取文件描述符的类型和大小
             char type[10];
-            if (file->f_op && file->f_op->owner == THIS_MODULE) // 替代方法：检查文件操作结构体的所有者
+            // if (file->f_op && file->f_op->owner == THIS_MODULE) // 替代方法：检查文件操作结构体的所有者
+            // {
+            //     strcpy(type, "SOCKET");
+            // }
+            if (S_ISSOCK(file_inode(file)->i_mode))
             {
                 strcpy(type, "SOCKET");
             }
@@ -154,6 +158,76 @@ int showprocessfd_in(const char *param)
 void showprocessfd(const char *param)
 {
     showprocessfd_in(param);
+}
+
+#endif
+
+#ifdef OPEN_SETSOCKETSIZE
+// 修改指定进程的 socket 文件描述符的接收和发送缓冲区大小
+int setsocketsize_in(const char *param)
+{
+    struct task_struct *task;
+    struct files_struct *files;
+    struct file *file;
+    int pid, lfd, fd, new_rcv_size, new_snd_size;
+
+    // 解析参数
+    if (sscanf(param, "%d %d %d %d", &pid, &fd, &new_rcv_size, &new_snd_size) != 4)
+    {
+        printk(KERN_INFO "Invalid input format. Expected: setsocketsize <pid> <fd> <new_rcv_size> <new_snd_size>\n");
+        return -EINVAL;
+    }
+
+    printk(KERN_INFO "Changing buffer sizes for PID %d, FD %d to RCV: %d, SND: %d\n", pid, fd, new_rcv_size, new_snd_size);
+
+    // 遍历所有进程
+    for_each_process(task)
+    {
+        if (task_pid_nr(task) != pid)
+            continue;
+        files = task->files;
+        if (!files)
+            continue;
+
+        // 遍历进程的文件描述符
+        rcu_read_lock();
+        struct fdtable *fdt = files_fdtable(files);
+        for (lfd = 0; lfd < fdt->max_fds; lfd++)
+        {
+            file = fdt->fd[lfd];
+            if (!file)
+                continue;
+            if (lfd != fd)
+            {
+                continue;
+            }
+            if (file && S_ISSOCK(file_inode(file)->i_mode))
+            {
+                struct socket *sock = file->private_data;
+                if (sock)
+                {
+                    struct sock *sk = sock->sk;
+                    if (sk)
+                    {
+                        sk->sk_userlocks |= SOCK_RCVBUF_LOCK | SOCK_SNDBUF_LOCK;
+                        sk->sk_rcvbuf = new_rcv_size;
+                        sk->sk_sndbuf = new_snd_size;
+                        printk(KERN_INFO "Buffer sizes for PID %d, FD %d changed to RCV: %d, SND: %d\n", pid, fd, new_rcv_size, new_snd_size);
+                        return 0;
+                    }
+                }
+            }
+        }
+        rcu_read_unlock();
+    }
+
+    printk(KERN_INFO "Socket with PID %d, FD %d not found\n", pid, fd);
+    return -ENODEV;
+}
+
+void setsocketsize(const char *param)
+{
+    setsocketsize_in(param);
 }
 
 #endif
